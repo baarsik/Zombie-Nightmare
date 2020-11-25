@@ -1,0 +1,190 @@
+[en]
+WIN_HUMAN = Humans win
+WIN_ZOMBIE = Zombies win
+WIN_NEMESIS = Nemesis eliminated all survivors
+
+CMD_INFECT = turned into a Zombie
+CMD_DISINFECT = turned back to Human
+CMD_NEMESIS = turned into a Nemesis
+CMD_SURVIVAL = turned into a Survivor
+CMD_MULTI = start Multiple Infection
+CMD_RESPAWN = respawned
+CMD_NOT = Unavailable command.
+CMD_ZOMBIE_ONLY = This is only available to zombies.
+CMD_HUMAN_ONLY = This is only available to humans.
+CMD_NOT_STUCK = You are not stuck.
+CMD_NOT_ACCESS = You have no access.
+CMD_NOT_CANTUSE = You can't use this right now.
+CMD_NOT_EXTRAS = Extra Items are disabled.
+CMD_NOT_ZCLASSES = Zombie Classes are disabled.
+
+MENU_BUY = Buy weapons
+MENU_EXTRABUY = Buy menu
+MENU_ZCLASS = Change zombie class
+MENU_UNSTUCK = Unstuck
+MENU_SERVERINFO = Buy VIP
+MENU_ADMIN = Admin Menu
+MENU_SPECTATOR = Join Spectators
+MENU_RETURN = Return to main menu
+
+MENU_BUY1_TITLE = Primary Weapon
+MENU_BUY2_TITLE = Secondary Weapon
+MENU_ZCLASS_TITLE = Zombie Class
+MENU_EXTRA_TITLE = Extra Items
+MENU_ADMIN_TITLE = Admin Menu
+MENU_INFO_TITLE = Plugin Information
+
+MENU_EXTRA1 = NightVision (single round)
+MENU_EXTRA2 = T-Virus Antidote
+MENU_EXTRA3 = Zombie Madness
+MENU_EXTRA4 = Infection Bomb
+MENU_ADMIN1 = Make Zombie/Human
+MENU_ADMIN2 = Make Nemesis
+MENU_ADMIN3 = Make Survivor
+MENU_ADMIN4 = Respawn Someone
+MENU_ADMIN6 = Start Multiple Infection
+MENU_INFO1 = General
+MENU_INFO2 = Humans
+MENU_INFO3 = Zombies
+MENU_INFO4 = Gameplay Modes
+MENU_AUTOSELECT = Remember Selection
+MENU_BACK = Back
+MENU_NEXT = Next
+MENU_EXIT = Exit
+
+MOTD_ENABLED = Enabled
+MOTD_DISABLED = Disabled
+
+ZOMBIE_ATTRIB1 = Health
+ZOMBIE_ATTRIB2 = Speed
+ZOMBIE_ATTRIB3 = Gravity
+ZOMBIE_ATTRIB4 = Knockback
+
+CLASS_CLASS = Class:
+CLASS_HUMAN = Human
+CLASS_ZOMBIE = Zombie
+CLASS_SURVIVOR = Survivor
+CLASS_NEMESIS = Nemesis
+CLASS_CHOSEN = Chosen
+CLASS_CURRENT = Current
+
+NOT_ENOUGH_AMMO = You dont have enough buy points(BP).
+AMMO_BOUGHT = You purchased extra ammo for your guns.
+ZOMBIE_SELECT = Your zombie class after the next infection will be
+ZOMBIE_SELECTED = You selected zombie class
+ZOMBIE_ALREADY = You have already selected zombie class
+ZOMBIE_VIP = This class is only for VIP players. Please, select another one.
+ZOMBIE_NOMONEY = You have insufficient funds to buy this class.
+ZOMBIE_BUYOK = You have successfully bought zombie class
+BUY_ENABLED = Your buy menu has been re-enabled.
+AMMO_PACKS1 = Buy Points:
+AMMO_PACKS2 = BP
+SOULS0 = Souls
+SOULS1 = Soul
+SOULS2 = Souls
+HEALTH_POINTS = HP
+SPECTATING = Spectating:
+GAVE_AMMO = You received
+TIME_TO_INFECT = Infect in %d seconds
+FIRST_INFECTED = The infection has spread
+RESPAWN_IN = Respawn in %d seconds
+AIM_INFO = %s | %s | BP: %d | Souls: %d
+
+GAMEMODE_INFECT = Normal infection^n%d zombies
+
+[ru]
+WIN_HUMAN = Люди выиграли
+WIN_ZOMBIE = Зомби выиграли
+WIN_NEMESIS = Дьявол уничтожил всех людей
+
+CMD_INFECT = стал Зомби
+CMD_DISINFECT = превратился обратно в Человека
+CMD_NEMESIS = Дьявол !!!
+CMD_SURVIVAL = Выживший !!!
+CMD_MULTI = Массовое Заражение!
+CMD_RESPAWN = возродился
+CMD_NOT = Недопустимая команда.
+CMD_ZOMBIE_ONLY = Доступно только для Зомби.
+CMD_HUMAN_ONLY = Доступно только для Людей.
+CMD_NOT_STUCK = Вы не застряли.
+CMD_NOT_ACCESS = У вас нет доступа.
+CMD_NOT_CANTUSE = Это нельзя сейчас использовать.
+CMD_NOT_EXTRAS = Специальные вещи отключены.
+CMD_NOT_ZCLASSES = Классы Зомби отключены.
+
+MENU_BUY = Выбрать оружие
+MENU_EXTRABUY = Меню покупок
+MENU_ZCLASS = Сменить тип зомби
+MENU_UNSTUCK = Застрял!
+MENU_SERVERINFO = Купить VIP
+MENU_ADMIN = Меню администратора
+MENU_SPECTATOR = В наблюдатели
+MENU_RETURN = Вернуться в главное меню
+
+MENU_BUY1_TITLE = Главное оружие
+MENU_BUY2_TITLE = Доп. оружие
+MENU_ZCLASS_TITLE = Класс Зомби:
+MENU_EXTRA_TITLE = Спец-вещи
+MENU_ADMIN_TITLE = Админ-меню
+MENU_INFO_TITLE = Инфо о плагине
+
+MENU_EXTRA1 = Ночное видение
+MENU_EXTRA2 = Антидот
+MENU_EXTRA3 = Бешенство зомби
+MENU_EXTRA4 = Граната-вирус
+MENU_ADMIN1 = Сделать Зомби/Человеком
+MENU_ADMIN2 = Дьяволом
+MENU_ADMIN3 = Выжившим
+MENU_ADMIN4 = Возродить
+MENU_ADMIN5 = Куча на кучу
+MENU_ADMIN6 = Массовое Зар.
+MENU_ADMIN7 = Чума
+MENU_INFO1 = В общем
+MENU_INFO2 = Люди
+MENU_INFO3 = Зомби
+MENU_INFO4 = Варианты игры
+
+MENU_AUTOSELECT = Запомнить выбор
+MENU_BACK = Назад
+MENU_NEXT = Вперед
+MENU_EXIT = Выход
+
+MOTD_ENABLED = Вкл
+MOTD_DISABLED = Выкл
+
+ZOMBIE_ATTRIB1 = Здоровье
+ZOMBIE_ATTRIB2 = Скорость
+ZOMBIE_ATTRIB3 = Гравитация
+ZOMBIE_ATTRIB4 = Отброс
+
+CLASS_CLASS = Тип:
+CLASS_HUMAN = Человек
+CLASS_ZOMBIE = Зомби
+CLASS_SURVIVOR = Выживший
+CLASS_NEMESIS = Дьявол
+CLASS_CHOSEN = Выбран
+CLASS_CURRENT = Текущий
+
+NOT_ENOUGH_AMMO = У вас не хватает очков покупок(ОП).
+AMMO_BOUGHT = Вы купили патроны.
+ZOMBIE_SELECT = После заражения ваш класс зомби будет
+ZOMBIE_SELECTED = Вы выбрали зомби класс
+ZOMBIE_ALREADY = Вы уже выбрали зомби класс
+ZOMBIE_VIP = Этот зомби класс доступен только VIP игрокам. Пожалуйста, выберите другой.
+ZOMBIE_NOMONEY = У вас недостаточно средств для покупки данного класса.
+ZOMBIE_BUYOK = Вы успешно купили зомби класс
+BUY_ENABLED = В следующем раунде вы снова сможете выбрать оружие.
+AMMO_PACKS1 = Очков покупок:
+AMMO_PACKS2 = ОП
+SOULS0 = Душ
+SOULS1 = Душа
+SOULS2 = Души
+HEALTH_POINTS = ОЗ
+SPECTATING = Наблюдение:
+GAVE_AMMO = Вы получили
+TIME_TO_INFECT = Заражение начнется через %d секунд
+FIRST_INFECTED = Заражение началось
+RESPAWN_IN = Воскрешение через %d секунд
+AIM_INFO = %s | %s | ОП: %d | Души: %d
+
+GAMEMODE_INFECT = Обычное заражение^n%d зомби

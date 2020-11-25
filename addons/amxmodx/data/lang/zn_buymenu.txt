@@ -1,0 +1,43 @@
+[en]
+BM_MAIN_MENU = Buy Menu
+BM_PISTOLS_MENU = HandGuns
+BM_SHOTGUNS_MENU = Shotguns
+BM_AUTOMATES_MENU = Assault Rifles
+BM_RIFLES_MENU = Rifles
+BM_MACHINEGUNS_MENU = Machine guns
+BM_EXTRAITEMS_MENU = Equipment
+BM_ZEXTRAITEMS_MENU = Extra items
+BM_KNIFE_MENU = Knife
+BM_VIPITEMS_MENU = VIP items
+BM_MIN_PLAYERS = Need %d players
+BM_CURRENCY = BP
+BM_SOULS0 = Souls
+BM_SOULS1 = Soul
+BM_SOULS2 = Souls
+BM_PRESS_B = Press [B] to open Buy Menu
+BM_FREE = Free
+BM_BACK = Back
+BM_NEXT = Next
+BM_EXIT = Exit
+
+[ru]
+BM_MAIN_MENU = Меню Покупок
+BM_PISTOLS_MENU = Пистолеты
+BM_SHOTGUNS_MENU = Дробовики
+BM_AUTOMATES_MENU = Автоматы
+BM_RIFLES_MENU = Винтовки
+BM_MACHINEGUNS_MENU = Пулеметы
+BM_EXTRAITEMS_MENU = Экипировка
+BM_ZEXTRAITEMS_MENU = Экстра-предметы
+BM_KNIFE_MENU = Ножи
+BM_VIPITEMS_MENU = VIP предметы
+BM_MIN_PLAYERS = Необходимо %d игроков
+BM_CURRENCY = ОП
+BM_SOULS0 = Душ
+BM_SOULS1 = Душа
+BM_SOULS2 = Души
+BM_FREE = Бесплатно
+BM_PRESS_B = Нажмите [B] чтобы открыть меню покупок
+BM_BACK = Назад
+BM_NEXT = Далее
+BM_EXIT = Выход
