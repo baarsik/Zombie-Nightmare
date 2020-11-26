@@ -417,9 +417,8 @@ const PEV_ADDITIONAL_AMMO = pev_iuser1
 // HACK: pev_ field used to store custom nade types and their values
 const PEV_NADE_TYPE = pev_flTimeStepSound
 const NADE_TYPE_INFECTION = 1111
-const NADE_TYPE_NAPALM = 2222
-const NADE_TYPE_FROST = 3333
-const NADE_TYPE_FLARE = 4444
+const NADE_TYPE_FROST = 2222
+const NADE_TYPE_FLARE = 3333
 const PEV_FLARE_COLOR = pev_punchangle
 const PEV_FLARE_DURATION = pev_flSwimTime
 
@@ -516,7 +515,7 @@ new g_lights_cycle[32] // current lightning cycle
 new g_lights_cycle_len // lightning cycle length
 new Float:g_models_targettime // for adding delays between Model Change messages
 new Float:g_teams_targettime // for adding delays between Team Change messages
-new g_trailSpr, g_exploSpr, g_flameSpr, g_smokeSpr, g_glassSpr // grenade sprites
+new g_trailSpr, g_exploSpr, g_glassSpr // grenade sprites
 new g_modname[32] // for formatting the mod name
 new g_freezetime // whether CS's freeze time is on
 new g_maxplayers // max players counter
@@ -576,27 +575,27 @@ new g_fwBuyAmmoPrimary, g_fwBuyAmmoSecondary
 new g_access_flag[MAX_ACCESS_FLAGS], Array:model_human, Array:model_admin_zombie,
 Array:model_admin_human, Array:g_modelindex_human, g_same_models_for_all,
 Array:g_modelindex_admin_zombie, Array:g_modelindex_admin_human, model_vknife_human[64],
-model_grenade_infect[64], model_grenade_fire[64], model_grenade_frost[64], model_grenade_flare[64],
+model_grenade_infect[64], model_grenade_frost[64], model_grenade_flare[64],
 model_pgrenade_frost[64], model_vknife_admin_human[64], model_vknife_admin_zombie[64],
-sprite_grenade_trail[64], sprite_grenade_ring[64], sprite_grenade_fire[64], sprite_grenade_smoke[64],
+sprite_grenade_trail[64], sprite_grenade_ring[64], sprite_grenade_smoke[64],
 sprite_grenade_glass[64], Array:sound_win_zombies, Array:sound_round_start_ismp3,
 Array:sound_win_humans, Array:sound_win_no_one, Array:sound_win_zombies_ismp3, Array:sound_round_start,
 Array:sound_win_humans_ismp3, Array:sound_win_no_one_ismp3, Array:zombie_infect,
 Array:zombie_idle, Array:zombie_pain, Array:zombie_die, Array:zombie_fall,
 Array:zombie_miss_wall, Array:zombie_hit_normal, Array:zombie_hit_stab, g_ambience_rain,
-Array:zombie_idle_last, Array:sound_multi, Array:grenade_infect, Array:grenade_infect_player, Array:grenade_fire,
-Array:grenade_fire_player, model_pgrenade_flare[64], Array:grenade_frost, Array:grenade_frost_player,
+Array:zombie_idle_last, Array:sound_multi, Array:grenade_infect, Array:grenade_infect_player,
+model_pgrenade_flare[64], Array:grenade_frost, Array:grenade_frost_player,
 Array:grenade_frost_break, model_wgrenade_frost[64], Array:grenade_flare, Array:sound_antidote,
 Array:sound_thunder, g_ambience_sounds[MAX_AMBIENCE_SOUNDS], Array:sound_ambience1,
 Array:sound_ambience1_duration, model_wgrenade_flare[64], Array:sound_ambience1_ismp3,
 Array:g_primary_items, Array:g_secondary_items,
-Array:g_additional_items, model_wgrenade_fire[64], Array:g_primary_weaponids, Array:g_secondary_weaponids,
+Array:g_additional_items, Array:g_primary_weaponids, Array:g_secondary_weaponids,
 Array:g_extraweapon_names, Array:g_extraweapon_items, Array:g_extraweapon_costs,
 g_extra_costs2[EXTRA_WEAPONS_STARTID], g_ambience_snow, g_ambience_fog, g_fog_density[10],
 g_fog_color[3], g_sky_enable, Array:g_sky_names, Array:lights_thunder, Array:zombie_decals,
 Array:g_objective_ents, Float:g_modelchange_delay, g_set_modelindex_offset, g_handle_models_on_separate_ent,
 Float:kb_weapon_power[31] = { -1.0, ... }, Array:zombie_miss_slash, g_force_consistency,
-model_pknife_human[64], model_pknife_admin_human[64], model_pgrenade_fire[64]
+model_pknife_human[64], model_pknife_admin_human[64]
 
 // CVAR pointers
 new cvar_zombiefov, cvar_zombiefirsthp, cvar_buyzonetime, cvar_zombiesurvreward, cvar_humansurvreward,
@@ -604,16 +603,16 @@ cvar_thunder, cvar_zombiebonushp, cvar_deathmatch, cvar_hitzones, cvar_humanhp, 
 cvar_ammodamage_human, cvar_ammodamage_zombie, cvar_zombiearmor, cvar_humanspd, cvar_flashdrain,
 cvar_zombiebleeding, cvar_removedoors, cvar_customflash, cvar_randspawn, cvar_infammo, cvar_ammoinfect,
 cvar_ammokill, cvar_huddisplay, cvar_knockbackpower, cvar_freezeduration, cvar_triggered,
-cvar_flashcharge, cvar_firegrenades, cvar_frostgrenades, cvar_logcommands, cvar_humangravity,
-cvar_humangravity_vip, cvar_spawnprotection, cvar_flareduration, cvar_zclasses, cvar_extraitems,
-cvar_showactivity, cvar_humanlasthp, cvar_warmup, cvar_flashdist, cvar_flarecolor, cvar_fireduration,
-cvar_firedamage, cvar_flaregrenades, cvar_knockbackducking, cvar_knockbackdamage, cvar_knockbackzvel,
-cvar_multiratio, cvar_extraantidote, cvar_extraweapons, cvar_extranvision, cvar_nvggive, cvar_botquota,
-cvar_buycustom, cvar_zombiepainfree, cvar_fireslowdown, cvar_extrainfbomb, cvar_knockback,
-cvar_fragsinfect, cvar_fragskill, cvar_humanarmor, cvar_zombiesilent, cvar_removedropped,
-cvar_blocksuicide, cvar_knockbackdist, cvar_leapzombies, cvar_leapzombiesforce, cvar_retammo,
-cvar_leapzombiesheight, cvar_leapzombiescooldown, cvar_respawnonsuicide, cvar_respawnafterlast,
-cvar_statssave, cvar_dmg_frozen, cvar_multiminplayers, cvar_adminmodelshuman, cvar_adminmodelszombie,
+cvar_flashcharge, cvar_frostgrenades, cvar_logcommands, cvar_humangravity, cvar_humangravity_vip,
+cvar_spawnprotection, cvar_flareduration, cvar_zclasses, cvar_extraitems, cvar_showactivity,
+cvar_humanlasthp, cvar_warmup, cvar_flashdist, cvar_flarecolor, cvar_flaregrenades,
+cvar_knockbackducking, cvar_knockbackdamage, cvar_knockbackzvel, cvar_multiratio, cvar_extraantidote,
+cvar_extraweapons, cvar_extranvision, cvar_nvggive, cvar_botquota, cvar_buycustom,
+cvar_zombiepainfree, cvar_extrainfbomb, cvar_knockback, cvar_fragsinfect, cvar_fragskill,
+cvar_humanarmor, cvar_zombiesilent, cvar_removedropped, cvar_blocksuicide, cvar_knockbackdist,
+cvar_leapzombies, cvar_leapzombiesforce, cvar_retammo, cvar_leapzombiesheight,
+cvar_leapzombiescooldown, cvar_respawnonsuicide, cvar_respawnafterlast, cvar_statssave,
+cvar_dmg_frozen, cvar_multiminplayers, cvar_adminmodelshuman, cvar_adminmodelszombie,
 cvar_zmlowknockback, cvar_blockpushables, cvar_respawnworldspawnkill, cvar_infectionscreenfade,
 cvar_infectionscreenshake, cvar_infectionsparkle, cvar_infectiontracers, cvar_infectionparticles,
 cvar_infbomblimit, cvar_flashshowall, cvar_allowrespawninfection, cvar_flashcolor[3],
@@ -731,8 +730,6 @@ public plugin_precache()
 	sound_multi = ArrayCreate(64, 1)
 	grenade_infect = ArrayCreate(64, 1)
 	grenade_infect_player = ArrayCreate(64, 1)
-	grenade_fire = ArrayCreate(64, 1)
-	grenade_fire_player = ArrayCreate(64, 1)
 	grenade_frost = ArrayCreate(64, 1)
 	grenade_frost_player = ArrayCreate(64, 1)
 	grenade_frost_break = ArrayCreate(64, 1)
@@ -832,9 +829,6 @@ public plugin_precache()
 	engfunc(EngFunc_PrecacheModel, model_vknife_human)
 	engfunc(EngFunc_PrecacheModel, model_pknife_human)
 	engfunc(EngFunc_PrecacheModel, model_grenade_infect)
-	engfunc(EngFunc_PrecacheModel, model_grenade_fire)
-	engfunc(EngFunc_PrecacheModel, model_pgrenade_fire)
-	engfunc(EngFunc_PrecacheModel, model_wgrenade_fire)
 	engfunc(EngFunc_PrecacheModel, model_grenade_frost)
 	engfunc(EngFunc_PrecacheModel, model_pgrenade_frost)
 	engfunc(EngFunc_PrecacheModel, model_wgrenade_frost)
@@ -848,8 +842,6 @@ public plugin_precache()
 	// Custom sprites for grenades
 	g_trailSpr = engfunc(EngFunc_PrecacheModel, sprite_grenade_trail)
 	g_exploSpr = engfunc(EngFunc_PrecacheModel, sprite_grenade_ring)
-	g_flameSpr = engfunc(EngFunc_PrecacheModel, sprite_grenade_fire)
-	g_smokeSpr = engfunc(EngFunc_PrecacheModel, sprite_grenade_smoke)
 	g_glassSpr = engfunc(EngFunc_PrecacheModel, sprite_grenade_glass)
 	
 	// Custom sounds
@@ -963,16 +955,6 @@ public plugin_precache()
 	for (i = 0; i < ArraySize(grenade_infect_player); i++)
 	{
 		ArrayGetString(grenade_infect_player, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_fire); i++)
-	{
-		ArrayGetString(grenade_fire, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_fire_player); i++)
-	{
-		ArrayGetString(grenade_fire_player, i, buffer, charsmax(buffer))
 		engfunc(EngFunc_PrecacheSound, buffer)
 	}
 	for (i = 0; i < ArraySize(grenade_frost); i++)
@@ -1277,10 +1259,6 @@ public plugin_init()
 	cvar_humansurvreward = register_cvar("zp_human_survive_reward", "2")
 	
 	// CVARS - Custom Grenades
-	cvar_firegrenades = register_cvar("zp_fire_grenades", "1")
-	cvar_fireduration = register_cvar("zp_fire_duration", "10")
-	cvar_firedamage = register_cvar("zp_fire_damage", "5")
-	cvar_fireslowdown = register_cvar("zp_fire_slowdown", "0.5")
 	cvar_frostgrenades = register_cvar("zp_frost_grenades", "1")
 	cvar_freezeduration = register_cvar("zp_frost_duration", "3")
 	cvar_flaregrenades = register_cvar("zp_flare_grenades","1")
@@ -1356,14 +1334,6 @@ public plugin_init()
 	set_cvar_num("sv_skycolor_r", 0)
 	set_cvar_num("sv_skycolor_g", 0)
 	set_cvar_num("sv_skycolor_b", 0)
-	
-	// Update ReGameDLL cvars so that the mod run correctly
-	set_cvar_string("mp_round_infinite", "bcdeg");
-	set_cvar_num("mp_auto_reload_weapons", 1);
-	set_cvar_num("mp_nade_drops", 0);
-	set_cvar_num("mp_auto_join_team", 1);
-	set_cvar_string("humans_join_team", "CT");
-	set_cvar_num("mp_autoteambalance", 0);
 	
 	// Format mod name
 	formatex(g_modname, charsmax(g_modname), "Zombie Nightmare %s", PLUGIN_VERSION)
@@ -2589,32 +2559,6 @@ public fw_SetModel(entity, const model[])
 		}
 		return FMRES_IGNORED
 	}
-	else if (model[9] == 'h' && model[10] == 'e' && get_pcvar_num(cvar_firegrenades)) // Napalm Grenade
-	{
-		// Set w_ model
-		engfunc(EngFunc_SetModel, entity, model_wgrenade_fire)
-		
-		// Give it a glow
-		fm_set_rendering(entity, kRenderFxGlowShell, 200, 0, 0, kRenderNormal, 16);
-		
-		// And a colored trail
-		message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
-		write_byte(TE_BEAMFOLLOW) // TE id
-		write_short(entity) // entity
-		write_short(g_trailSpr) // sprite
-		write_byte(10) // life
-		write_byte(5) // width
-		write_byte(200) // r
-		write_byte(0) // g
-		write_byte(0) // b
-		write_byte(200) // brightness
-		message_end()
-		
-		// Set grenade type on the thrown grenade entity
-		set_pev(entity, PEV_NADE_TYPE, NADE_TYPE_NAPALM)
-		
-		return FMRES_SUPERCEDE
-	}
 	else if (model[9] == 'f' && model[10] == 'l' && get_pcvar_num(cvar_frostgrenades)) // Frost Grenade
 	{
 		// Set w_ model
@@ -2765,11 +2709,6 @@ public fw_ThinkGrenade(entity)
 		case NADE_TYPE_INFECTION: // Infection Bomb
 		{
 			infection_explode(entity)
-			return HAM_SUPERCEDE;
-		}
-		case NADE_TYPE_NAPALM: // Napalm Grenade
-		{
-			fire_explode(entity)
 			return HAM_SUPERCEDE;
 		}
 		case NADE_TYPE_FROST: // Frost Grenade
@@ -5553,12 +5492,6 @@ load_customization_from_files()
 					copy(model_pknife_human, charsmax(model_pknife_human), value)
 				else if (equal(key, "GRENADE INFECT"))
 					copy(model_grenade_infect, charsmax(model_grenade_infect), value)
-				else if (equal(key, "V_GRENADE FIRE"))
-					copy(model_grenade_fire, charsmax(model_grenade_fire), value)
-				else if (equal(key, "P_GRENADE FIRE"))
-					copy(model_pgrenade_fire, charsmax(model_pgrenade_fire), value)
-				else if (equal(key, "W_GRENADE FIRE"))
-					copy(model_wgrenade_fire, charsmax(model_wgrenade_fire), value)
 				else if (equal(key, "V_GRENADE FROST"))
 					copy(model_grenade_frost, charsmax(model_grenade_frost), value)
 				else if (equal(key, "P_GRENADE FROST"))
@@ -5584,8 +5517,6 @@ load_customization_from_files()
 					copy(sprite_grenade_trail, charsmax(sprite_grenade_trail), value)
 				else if (equal(key, "RING"))
 					copy(sprite_grenade_ring, charsmax(sprite_grenade_ring), value)
-				else if (equal(key, "FIRE"))
-					copy(sprite_grenade_fire, charsmax(sprite_grenade_fire), value)
 				else if (equal(key, "SMOKE"))
 					copy(sprite_grenade_smoke, charsmax(sprite_grenade_smoke), value)
 				else if (equal(key, "GLASS"))
@@ -5816,32 +5747,6 @@ load_customization_from_files()
 						
 						// Add to sounds array
 						ArrayPushString(grenade_infect_player, key)
-					}
-				}
-				else if (equal(key, "GRENADE FIRE EXPLODE"))
-				{
-					// Parse sounds
-					while (value[0] != 0 && strtok(value, key, charsmax(key), value, charsmax(value), ','))
-					{
-						// Trim spaces
-						trim(key)
-						trim(value)
-						
-						// Add to sounds array
-						ArrayPushString(grenade_fire, key)
-					}
-				}
-				else if (equal(key, "GRENADE FIRE PLAYER"))
-				{
-					// Parse sounds
-					while (value[0] != 0 && strtok(value, key, charsmax(key), value, charsmax(value), ','))
-					{
-						// Trim spaces
-						trim(key)
-						trim(value)
-						
-						// Add to sounds array
-						ArrayPushString(grenade_fire_player, key)
 					}
 				}
 				else if (equal(key, "GRENADE FROST EXPLODE"))
@@ -6625,55 +6530,6 @@ infection_explode(ent)
 	engfunc(EngFunc_RemoveEntity, ent)
 }
 
-// Fire Grenade Explosion
-fire_explode(ent)
-{
-	// Get origin
-	static Float:originF[3]
-	pev(ent, pev_origin, originF)
-	
-	// Make the explosion
-	create_blast2(originF)
-	
-	// Fire nade explode sound
-	static sound[64]
-	ArrayGetString(grenade_fire, random_num(0, ArraySize(grenade_fire) - 1), sound, charsmax(sound))
-	emit_sound(ent, CHAN_WEAPON, sound, 1.0, ATTN_NORM, 0, PITCH_NORM)
-	
-	// Collisions
-	static victim
-	victim = -1
-	
-	while ((victim = engfunc(EngFunc_FindEntityInSphere, victim, originF, NADE_EXPLOSION_RADIUS)) != 0)
-	{
-		// Only effect alive zombies
-		if (!is_user_valid_alive(victim) || !g_zombie[victim] || g_nodamage[victim])
-			continue;
-		
-		// Heat icon?
-		if (get_pcvar_num(cvar_hudicons))
-		{
-			message_begin(MSG_ONE_UNRELIABLE, g_msgDamage, _, victim)
-			write_byte(0) // damage save
-			write_byte(0) // damage take
-			write_long(DMG_BURN) // damage type
-			write_coord(0) // x
-			write_coord(0) // y
-			write_coord(0) // z
-			message_end()
-		}
-		
-		g_burning_duration[victim] += get_pcvar_num(cvar_fireduration) * 5
-		
-		// Set burning task on victim if not present
-		if (!task_exists(victim+TASK_BURN))
-			set_task(0.2, "burning_flame", victim+TASK_BURN, _, _, "b")
-	}
-	
-	// Get rid of the grenade
-	engfunc(EngFunc_RemoveEntity, ent)
-}
-
 // Frost Grenade Explosion
 frost_explode(ent)
 {
@@ -6908,13 +6764,11 @@ replace_weapon_models(id, weaponid)
 				}
 			}
 		}
-		case CSW_HEGRENADE: // Infection bomb or fire grenade
+		case CSW_HEGRENADE: // Infection bomb
 		{
 			if (g_zombie[id])
+			{
 				set_pev(id, pev_viewmodel2, model_grenade_infect)
-			else {
-				set_pev(id, pev_viewmodel2, model_grenade_fire)
-				set_pev(id, pev_weaponmodel2, model_pgrenade_fire)
 			}
 		}
 		case CSW_FLASHBANG: // Frost grenade
@@ -8351,73 +8205,6 @@ public make_blood(taskid)
 	message_end()
 }
 
-// Burning Flames
-public burning_flame(taskid)
-{
-	// Get player origin and flags
-	static origin[3], flags
-	get_user_origin(ID_BURN, origin)
-	flags = pev(ID_BURN, pev_flags)
-	
-	// In water - burning stopped
-	if ((flags & FL_INWATER) || g_burning_duration[ID_BURN] < 1)
-	{
-		// Smoke sprite
-		message_begin(MSG_PVS, SVC_TEMPENTITY, origin)
-		write_byte(TE_SMOKE) // TE id
-		write_coord(origin[0]) // x
-		write_coord(origin[1]) // y
-		write_coord(origin[2]-50) // z
-		write_short(g_smokeSpr) // sprite
-		write_byte(random_num(15, 20)) // scale
-		write_byte(random_num(10, 20)) // framerate
-		message_end()
-		
-		// Task not needed anymore
-		remove_task(taskid);
-		return;
-	}
-	
-	// Randomly play burning zombie scream sounds
-	if (!random_num(0, 20))
-	{
-		static sound[64]
-		ArrayGetString(grenade_fire_player, random_num(0, ArraySize(grenade_fire_player) - 1), sound, charsmax(sound))
-		emit_sound(ID_BURN, CHAN_VOICE, sound, 1.0, ATTN_NORM, 0, PITCH_NORM)
-	}
-	
-	// Fire slow down
-	if (flags & FL_ONGROUND && get_pcvar_float(cvar_fireslowdown) > 0.0)
-	{
-		static Float:velocity[3]
-		pev(ID_BURN, pev_velocity, velocity)
-		xs_vec_mul_scalar(velocity, get_pcvar_float(cvar_fireslowdown), velocity)
-		set_pev(ID_BURN, pev_velocity, velocity)
-	}
-	
-	// Get player's health
-	static health
-	health = pev(ID_BURN, pev_health)
-	
-	// Take damage from the fire
-	if (health - floatround(get_pcvar_float(cvar_firedamage), floatround_ceil) > 0)
-		fm_set_user_health(ID_BURN, health - floatround(get_pcvar_float(cvar_firedamage), floatround_ceil))
-	
-	// Flame sprite
-	message_begin(MSG_PVS, SVC_TEMPENTITY, origin)
-	write_byte(TE_SPRITE) // TE id
-	write_coord(origin[0]+random_num(-5, 5)) // x
-	write_coord(origin[1]+random_num(-5, 5)) // y
-	write_coord(origin[2]+random_num(-10, 10)) // z
-	write_short(g_flameSpr) // sprite
-	write_byte(random_num(5, 10)) // scale
-	write_byte(200) // brightness
-	message_end()
-	
-	// Decrease burning duration counter
-	g_burning_duration[ID_BURN]--
-}
-
 // Infection Bomb: Green Blast
 create_blast(const Float:originF[3])
 {
@@ -8484,76 +8271,6 @@ create_blast(const Float:originF[3])
 	write_byte(200) // green
 	write_byte(80) // blue
 	write_byte(150) // brightness
-	write_byte(0) // speed
-	message_end()
-}
-
-// Fire Grenade: Fire Blast
-create_blast2(const Float:originF[3])
-{
-	// Smallest ring
-	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
-	write_byte(TE_BEAMCYLINDER) // TE id
-	engfunc(EngFunc_WriteCoord, originF[0]) // x
-	engfunc(EngFunc_WriteCoord, originF[1]) // y
-	engfunc(EngFunc_WriteCoord, originF[2]) // z
-	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
-	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
-	engfunc(EngFunc_WriteCoord, originF[2]+385.0) // z axis
-	write_short(g_exploSpr) // sprite
-	write_byte(0) // startframe
-	write_byte(0) // framerate
-	write_byte(4) // life
-	write_byte(60) // width
-	write_byte(0) // noise
-	write_byte(200) // red
-	write_byte(100) // green
-	write_byte(0) // blue
-	write_byte(200) // brightness
-	write_byte(0) // speed
-	message_end()
-	
-	// Medium ring
-	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
-	write_byte(TE_BEAMCYLINDER) // TE id
-	engfunc(EngFunc_WriteCoord, originF[0]) // x
-	engfunc(EngFunc_WriteCoord, originF[1]) // y
-	engfunc(EngFunc_WriteCoord, originF[2]) // z
-	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
-	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
-	engfunc(EngFunc_WriteCoord, originF[2]+470.0) // z axis
-	write_short(g_exploSpr) // sprite
-	write_byte(0) // startframe
-	write_byte(0) // framerate
-	write_byte(4) // life
-	write_byte(60) // width
-	write_byte(0) // noise
-	write_byte(200) // red
-	write_byte(50) // green
-	write_byte(0) // blue
-	write_byte(200) // brightness
-	write_byte(0) // speed
-	message_end()
-	
-	// Largest ring
-	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
-	write_byte(TE_BEAMCYLINDER) // TE id
-	engfunc(EngFunc_WriteCoord, originF[0]) // x
-	engfunc(EngFunc_WriteCoord, originF[1]) // y
-	engfunc(EngFunc_WriteCoord, originF[2]) // z
-	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
-	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
-	engfunc(EngFunc_WriteCoord, originF[2]+555.0) // z axis
-	write_short(g_exploSpr) // sprite
-	write_byte(0) // startframe
-	write_byte(0) // framerate
-	write_byte(4) // life
-	write_byte(60) // width
-	write_byte(0) // noise
-	write_byte(200) // red
-	write_byte(0) // green
-	write_byte(0) // blue
-	write_byte(200) // brightness
 	write_byte(0) // speed
 	message_end()
 }
