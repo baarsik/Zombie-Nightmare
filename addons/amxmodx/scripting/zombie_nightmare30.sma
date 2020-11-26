@@ -3,24 +3,24 @@
 =================================================================================*/
 
 // Text
-new const ZP_PREFIX[] =			"SERVER"		// Prefix (ex: "[SERVER] Message")
-new const BUY_MOTD[] =			"https://cerberus.by/motd/demo.html"
+new const ZP_PREFIX[] =      "SERVER"
+new const BUY_MOTD[] =       "https://cerberus.by/motd/demo.html"
 
 // Limits
-new const ZP_MAX_AMMO =			1000			// Maximum ammo
-new const ZP_MAX_AMMO_VIP =		1500			// VIP maximum ammo
-new const ZP_MAX_SOULS =		8				// Maximum souls
-new const ZP_MAX_SOULS_VIP =	12				// VIP maximum souls
+new const ZP_MAX_AMMO =      1000
+new const ZP_MAX_AMMO_VIP =  1500
+new const ZP_MAX_SOULS =     8
+new const ZP_MAX_SOULS_VIP = 12
 
 // Zombie nightvision color
-new const ZP_NVG_ZOMBIE_R =		50				// Color: Red
-new const ZP_NVG_ZOMBIE_G =		0				// Color: Green
-new const ZP_NVG_ZOMBIE_B =		0				// Color: Blue
+new const ZP_NVG_ZOMBIE_R =  50
+new const ZP_NVG_ZOMBIE_G =  0
+new const ZP_NVG_ZOMBIE_B =  0
 
 // Human nightvision color
-new const ZP_NVG_HUMAN_R =		0				// Color: Red
-new const ZP_NVG_HUMAN_G =		50				// Color: Green
-new const ZP_NVG_HUMAN_B =		0				// Color: Blue
+new const ZP_NVG_HUMAN_R =   0
+new const ZP_NVG_HUMAN_G =   50
+new const ZP_NVG_HUMAN_B =   0
 
 /*================================================================================
  Customization ends here! Yes, that's it. Editing anything beyond
@@ -30,7 +30,7 @@ new const ZP_NVG_HUMAN_B =		0				// Color: Blue
 /*================================================================================
  Changelog -- 3.0
 ==================================================================================
-1.  Обновлено для совместимости с AMXX 1.8.3 + ReHLDS + ReGameDLL
+1.  Обновлено для работы с AMXX 1.8.3 + ReHLDS + ReGameDLL
 2.  Удален экстра-предмет 'Zombie Madness'
 ==================================================================================
  Changelog -- 2.1
@@ -96,11 +96,7 @@ Changelog -- 1.2
 7.  Разделение цен на покупку патронов разного типа
 8.  Возможность покупать патроны в кастомных оружиях
 9.  Увеличенное количество патронов в запасе(+50%)
-10. Сделан PSD для создания своего motd окна
-11. Новый код заражения: сперва нужно "убить" человека
-12. В главное меню добавлен пункт "Меню администратора" - amxmodmenu
-13. В чат добавлен транслит
-14. Повторяющиеся пробелы в чате удаляются
+10. Новый код заражения: сперва нужно "убить" человека
 ==================================================================================
  Changelog -- 1.1
 ==================================================================================
@@ -136,22 +132,6 @@ Changelog -- 1.2
 #include <hamsandwich>
 #include <reapi>
 #include <xs>
-
-// AmxModX 1.8.3 compatibility
-#if AMXX_VERSION_NUM < 183
-#include <dhudmessage>
-#define print_team_default	DontChange
-#define print_team_grey		Grey
-#define print_team_red		Red
-#define print_team_blue		Blue
-#define MAX_TRANSLATION_LENGTH 2048
-enum {
-	DontChange = 0,
-	Grey = -1,
-	Red = -2,
-	Blue = -3
-}
-#endif
 
 /*================================================================================
  [Constants, Offsets, Macros]
@@ -8927,194 +8907,6 @@ UTIL_BlinkAcct(id, BlinkAmt) {
 	write_byte(BlinkAmt)
 	message_end()
 }
-
-#if AMXX_VERSION_NUM < 183
-stock client_print_color(id, sender, const fmt[], any:...)
-{
-	// check if id is different from 0
-	if (id && !is_user_connected(id))
-	{
-		return 0;
-	}
-
-	if (sender < Blue || sender > 32)
-	{
-		sender = DontChange;
-	}
-	else if (sender < DontChange)
-	{
-		sender = -sender + 32; // align indexes to the TeamInfo ones
-	}
-
-	static const szTeamName[][] =
-	{
-		"",
-		"TERRORIST",
-		"CT"
-	};
-
-	new szMessage[188];
-
-	new iParams = numargs();
-
-	// Specific player code
-	if (id)
-	{
-		if (iParams == 3)
-		{
-			copy(szMessage, charsmax(szMessage), fmt); // copy so message length doesn't exceed critical 192 value
-		}
-		else
-		{
-			vformat(szMessage, charsmax(szMessage), fmt, 4);
-		}
-
-		if (sender > (32 - Grey))
-		{
-			if (sender > (32 - Blue))
-			{
-				sender = id;
-			}
-			else
-			{
-				_CC_TeamInfo(id, sender, szTeamName[sender - (32 - Grey)]);
-			}
-		}
-		_CC_SayText(id, sender, szMessage);
-	}
-
-	// Send message to all players
-	else
-	{
-		// Figure out if at least 1 player is connected
-		// so we don't execute useless useless code if not
-		new iPlayers[32], iNum;
-		get_players(iPlayers, iNum, "ch");
-		if (!iNum)
-		{
-			return 0;
-		}
-
-		new iMlNumber, i, j;
-		new Array:aStoreML = ArrayCreate();
-		if (iParams >= 5) // ML can be used
-		{
-			for (j = 3; j < iParams; j++)
-			{
-				// retrieve original param value and check if it's LANG_PLAYER value
-				if (getarg(j) == LANG_PLAYER)
-				{
-					i = 0;
-					// as LANG_PLAYER == -1, check if next parm string is a registered language translation
-					while ((szMessage[i] = getarg(j + 1, i++))) {}
-					if (GetLangTransKey(szMessage) != TransKey_Bad)
-					{
-						// Store that arg as LANG_PLAYER so we can alter it later
-						ArrayPushCell(aStoreML, j++);
-
-						// Update ML array saire so we'll know 1st if ML is used,
-						// 2nd how many args we have to alterate
-						iMlNumber++;
-					}
-				}
-			}
-		}
-
-		// If arraysize == 0, ML is not used
-		// we can only send 1 MSG_ALL message if sender != 0
-		if (!iMlNumber)
-		{
-			if (iParams == 3)
-			{
-				copy(szMessage, charsmax(szMessage), fmt);
-			}
-			else
-			{
-				vformat(szMessage, charsmax(szMessage), fmt, 4);
-			}
-			if (0 < sender < (32 - Blue)) // if 0 is passed, need to loop
-			{
-				if (sender > (32 - Grey))
-				{
-					_CC_TeamInfo(0, sender, szTeamName[sender - (32 - Grey)]);
-				}
-				_CC_SayText(0, sender, szMessage);
-				return 1;
-			}
-		}
-
-		if (sender > (32 - Blue))
-		{
-			sender = 0; // use receiver index
-		}
-
-		for (--iNum; iNum >= 0; iNum--)
-		{
-			id = iPlayers[iNum];
-
-			if (iMlNumber)
-			{
-				for (j = 0; j < iMlNumber; j++)
-				{
-					// Set all LANG_PLAYER args to player index ( = id )
-					// so we can format the text for that specific player
-					setarg(ArrayGetCell(aStoreML, j), _, id);
-				}
-
-				// format string for specific player
-				vformat(szMessage, charsmax(szMessage), fmt, 4);
-			}
-
-			if (sender > (32 - Grey))
-			{
-				_CC_TeamInfo(id, sender, szTeamName[sender - (32 - Grey)]);
-			}
-			_CC_SayText(id, sender, szMessage);
-		}
-
-		ArrayDestroy(aStoreML);
-	}
-	return 1;
-}
-
-stock _CC_TeamInfo(iReceiver, iSender, szTeam[])
-{
-	static iTeamInfo = 0;
-	if (!iTeamInfo)
-	{
-		iTeamInfo = get_user_msgid("TeamInfo");
-	}
-	message_begin(iReceiver ? MSG_ONE : MSG_ALL, iTeamInfo, _, iReceiver);
-	write_byte(iSender);
-	write_string(szTeam);
-	message_end();
-}
-
-stock _CC_SayText(iReceiver, iSender, szMessage[])
-{
-	static iSayText = 0;
-	if (!iSayText)
-	{
-		iSayText = get_user_msgid("SayText");
-	}
-	message_begin(iReceiver ? MSG_ONE : MSG_ALL, iSayText, _, iReceiver);
-	write_byte(iSender ? iSender : iReceiver);
-	if (szMessage[0] > 4)
-	{
-		write_byte(1);
-		szMessage[186] = 0;
-		write_string("%s");
-		write_string(szMessage);
-	}
-	else
-	{
-		szMessage[187] = 0;
-		write_string("%s");
-		write_string(szMessage);
-	}
-	message_end();
-}
-#endif
 
 stock get_weapon_index(id, const wname[]) {
 	static ent; ent = -1
