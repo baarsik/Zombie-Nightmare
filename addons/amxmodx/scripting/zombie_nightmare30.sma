@@ -22,12 +22,6 @@ new const ZP_NVG_HUMAN_R =		0				// Color: Red
 new const ZP_NVG_HUMAN_G =		50				// Color: Green
 new const ZP_NVG_HUMAN_B =		0				// Color: Blue
 
-// Zombie madness aura color
-new const ZP_MADNESS_R =		150				// Color: Red
-new const ZP_MADNESS_G =		90				// Color: Green
-new const ZP_MADNESS_B =		0				// Color: Blue
-new const ZP_MADNESS_RAD =		15				// Aura radius
-
 /*================================================================================
  Customization ends here! Yes, that's it. Editing anything beyond
  here is not officially supported. Proceed at your own risk...
@@ -37,6 +31,7 @@ new const ZP_MADNESS_RAD =		15				// Aura radius
  Changelog -- 3.0
 ==================================================================================
 1.  Обновлено для совместимости с AMXX 1.8.3 + ReHLDS + ReGameDLL
+2.  Удален экстра-предмет 'Zombie Madness'
 ==================================================================================
  Changelog -- 2.1
 ==================================================================================
@@ -269,7 +264,6 @@ const MENU_KEY_EXIT = 9
 enum {
 	EXTRA_NVISION = 0,
 	EXTRA_ANTIDOTE,
-	EXTRA_MADNESS,
 	EXTRA_INFBOMB,
 	EXTRA_WEAPONS_STARTID
 }
@@ -487,7 +481,7 @@ new g_frozen[33] // is frozen (can't move)
 new g_frozen_v_angle[33][3] // frozen view angles
 new g_instantinfect[33] // has ability to infect in 1 hit
 new Float:g_frozen_gravity[33] // store previous gravity when frozen
-new g_nodamage[33] // has spawn protection/zombie madness
+new g_nodamage[33] // has spawn protection
 new g_respawn_as_zombie[33] // should respawn as zombie
 new g_nvision[33] // has night vision
 new g_nvisionenabled[33] // has night vision turned on
@@ -542,7 +536,7 @@ new g_maxplayers // max players counter
 new g_czero // whether we are running on a CZ server
 new g_hamczbots // whether ham forwards are registered for CZ bots
 new g_fwSpawn, g_fwPrecacheSound // spawn and precache sound forward handles
-new g_infbombcounter, g_antidotecounter, g_madnesscounter // to limit buying some items
+new g_infbombcounter, g_antidotecounter // to limit buying some items
 new g_arrays_created // to prevent stuff from being registered before initializing arrays
 new g_lastplayerleaving // flag for whenever a player leaves and another takes his place
 new g_switchingteam // flag for whenever a player's team change emessage is sent
@@ -604,8 +598,7 @@ Array:sound_win_humans, Array:sound_win_no_one, Array:sound_win_zombies_ismp3, A
 Array:sound_win_humans_ismp3, Array:sound_win_no_one_ismp3, Array:zombie_infect,
 Array:zombie_idle, Array:zombie_pain, Array:zombie_die, Array:zombie_fall,
 Array:zombie_miss_wall, Array:zombie_hit_normal, Array:zombie_hit_stab, g_ambience_rain,
-Array:zombie_idle_last, Array:zombie_madness, Array:sound_multi, Array:grenade_infect,
-Array:grenade_infect_player, Array:grenade_fire,
+Array:zombie_idle_last, Array:sound_multi, Array:grenade_infect, Array:grenade_infect_player, Array:grenade_fire,
 Array:grenade_fire_player, model_pgrenade_flare[64], Array:grenade_frost, Array:grenade_frost_player,
 Array:grenade_frost_break, model_wgrenade_frost[64], Array:grenade_flare, Array:sound_antidote,
 Array:sound_thunder, g_ambience_sounds[MAX_AMBIENCE_SOUNDS], Array:sound_ambience1,
@@ -629,18 +622,17 @@ cvar_triggered, cvar_flashcharge, cvar_firegrenades, cvar_frostgrenades, cvar_lo
 cvar_humangravity, cvar_humangravity_vip, cvar_spawnprotection, cvar_flareduration, cvar_zclasses,
 cvar_extraitems, cvar_showactivity, cvar_humanlasthp, cvar_warmup, cvar_flashdist, cvar_flarecolor,
 cvar_fireduration, cvar_firedamage, cvar_flaregrenades, cvar_knockbackducking, cvar_knockbackdamage,
-cvar_knockbackzvel, cvar_multiratio, cvar_extraantidote, cvar_extramadness, cvar_extraweapons,
-cvar_extranvision, cvar_nvggive, cvar_botquota, cvar_buycustom, cvar_zombiepainfree, cvar_fireslowdown,
-cvar_extrainfbomb, cvar_knockback, cvar_fragsinfect, cvar_fragskill, cvar_madnesslimit, cvar_humanarmor,
-cvar_zombiesilent, cvar_removedropped, cvar_blocksuicide, cvar_knockbackdist, cvar_leapzombies,
-cvar_leapzombiesforce, cvar_retammo, cvar_leapzombiesheight, cvar_leapzombiescooldown,
-cvar_respawnonsuicide, cvar_respawnafterlast, cvar_statssave, cvar_dmg_frozen, cvar_multiminplayers,
-cvar_adminmodelshuman, cvar_adminmodelszombie, cvar_zmlowknockback, cvar_blockpushables,
-cvar_respawnworldspawnkill, cvar_madnessduration, cvar_infectionscreenfade, cvar_infectionscreenshake,
-cvar_infectionsparkle, cvar_infectiontracers, cvar_infectionparticles, cvar_infbomblimit,
-cvar_flashshowall, cvar_allowrespawninfection, cvar_flashcolor[3], cvar_ammodamage_human_vip,
-cvar_hudicons, cvar_respawnzomb, cvar_respawnhum, cvar_startammopacks, cvar_randweapons,
-cvar_antidotelimit, cvar_adminknifemodelshuman, cvar_adminknifemodelszombie,
+cvar_knockbackzvel, cvar_multiratio, cvar_extraantidote, cvar_extraweapons, cvar_extranvision,
+cvar_nvggive, cvar_botquota, cvar_buycustom, cvar_zombiepainfree, cvar_fireslowdown, cvar_extrainfbomb,
+cvar_knockback, cvar_fragsinfect, cvar_fragskill, cvar_humanarmor, cvar_zombiesilent, cvar_removedropped,
+cvar_blocksuicide, cvar_knockbackdist, cvar_leapzombies, cvar_leapzombiesforce, cvar_retammo,
+cvar_leapzombiesheight, cvar_leapzombiescooldown, cvar_respawnonsuicide, cvar_respawnafterlast,
+cvar_statssave, cvar_dmg_frozen, cvar_multiminplayers, cvar_adminmodelshuman, cvar_adminmodelszombie,
+cvar_zmlowknockback, cvar_blockpushables, cvar_respawnworldspawnkill, cvar_infectionscreenfade,
+cvar_infectionscreenshake, cvar_infectionsparkle, cvar_infectiontracers, cvar_infectionparticles,
+cvar_infbomblimit, cvar_flashshowall, cvar_allowrespawninfection, cvar_flashcolor[3],
+cvar_ammodamage_human_vip, cvar_hudicons, cvar_respawnzomb, cvar_respawnhum, cvar_startammopacks,
+cvar_randweapons, cvar_antidotelimit, cvar_adminknifemodelshuman, cvar_adminknifemodelszombie,
 cvar_vipinfammo, cvar_gamemode_chance, cvar_gamemode_minpl
 
 // Cached stuff for players
@@ -748,7 +740,6 @@ public plugin_precache() {
 	zombie_hit_stab = ArrayCreate(64, 1)
 	zombie_idle = ArrayCreate(64, 1)
 	zombie_idle_last = ArrayCreate(64, 1)
-	zombie_madness = ArrayCreate(64, 1)
 	sound_multi = ArrayCreate(64, 1)
 	grenade_infect = ArrayCreate(64, 1)
 	grenade_infect_player = ArrayCreate(64, 1)
@@ -805,7 +796,6 @@ public plugin_precache() {
 	// Load up the hard coded extra items
 	native_register_extra_item2("NightVision", g_extra_costs2[EXTRA_NVISION], ZP_TEAM_HUMAN)
 	native_register_extra_item2("T-Virus Antidote", g_extra_costs2[EXTRA_ANTIDOTE], ZP_TEAM_ZOMBIE)
-	native_register_extra_item2("Zombie Madness", g_extra_costs2[EXTRA_MADNESS], ZP_TEAM_ZOMBIE)
 	native_register_extra_item2("Infection Bomb", g_extra_costs2[EXTRA_INFBOMB], ZP_TEAM_ZOMBIE)
 	
 	// Extra weapons
@@ -943,10 +933,6 @@ public plugin_precache() {
 	}
 	for (i = 0; i < ArraySize(zombie_idle_last); i++) {
 		ArrayGetString(zombie_idle_last, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_madness); i++) {
-		ArrayGetString(zombie_madness, i, buffer, charsmax(buffer))
 		engfunc(EngFunc_PrecacheSound, buffer)
 	}
 	for (i = 0; i < ArraySize(sound_multi); i++) {
@@ -1218,9 +1204,6 @@ public plugin_init() {
 	cvar_extranvision = register_cvar("zp_extra_nvision", "1")
 	cvar_extraantidote = register_cvar("zp_extra_antidote", "1")
 	cvar_antidotelimit = register_cvar("zp_extra_antidote_limit", "999")
-	cvar_extramadness = register_cvar("zp_extra_madness", "1")
-	cvar_madnesslimit = register_cvar("zp_extra_madness_limit", "999")
-	cvar_madnessduration = register_cvar("zp_extra_madness_duration", "5.0")
 	cvar_extrainfbomb = register_cvar("zp_extra_infbomb", "1")
 	cvar_infbomblimit = register_cvar("zp_extra_infbomb_limit", "999")
 	
@@ -1400,7 +1383,6 @@ public event_round_start() {
 	// Reset bought infection bombs counter
 	g_infbombcounter = 0
 	g_antidotecounter = 0
-	g_madnesscounter = 0
 	
 	// Freezetime begins
 	g_freezetime = true
@@ -1821,7 +1803,6 @@ public fw_PlayerSpawn_Post(id) {
 public fw_PlayerKilled(victim, attacker, shouldgib) {
 	// Player killed
 	g_isalive[victim] = false
-	// Disable nodamage mode after we die to prevent spectator nightvision using zombie madness colors bug
 	g_nodamage[victim] = false
 	
 	// Enable dead players nightvision
@@ -1940,12 +1921,16 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage, damage_type) {
 	if (g_newround || g_endround)
 		return HAM_SUPERCEDE;
 	
-	// Victim shouldn't take damage or victim is frozen
-	if (g_nodamage[victim] || (g_frozen[victim] && !get_pcvar_num(cvar_dmg_frozen)))
+	// Victim shouldn't take damage
+	if (g_nodamage[victim])
 		return HAM_SUPERCEDE;
 	
 	// Prevent friendly fire
 	if (g_zombie[attacker] == g_zombie[victim])
+		return HAM_SUPERCEDE;
+	
+	// Victim is frozen
+	if (g_frozen[victim] && !get_pcvar_num(cvar_dmg_frozen))
 		return HAM_SUPERCEDE;
 	
 	// Attacker is human...
@@ -3709,7 +3694,6 @@ buy_extra_item(id, itemid, ignorecost = 0)
 	// Check for unavailable items
 	if ((itemid == EXTRA_NVISION && !get_pcvar_num(cvar_extranvision))
 	|| (itemid == EXTRA_ANTIDOTE && (!get_pcvar_num(cvar_extraantidote) || g_antidotecounter >= get_pcvar_num(cvar_antidotelimit)))
-	|| (itemid == EXTRA_MADNESS && (!get_pcvar_num(cvar_extramadness) || g_madnesscounter >= get_pcvar_num(cvar_madnesslimit)))
 	|| (itemid == EXTRA_INFBOMB && (!get_pcvar_num(cvar_extrainfbomb) || g_infbombcounter >= get_pcvar_num(cvar_infbomblimit)))
 	|| (itemid >= EXTRA_WEAPONS_STARTID && itemid <= EXTRAS_CUSTOM_STARTID-1 && !get_pcvar_num(cvar_extraweapons)))
 	{
@@ -3719,7 +3703,7 @@ buy_extra_item(id, itemid, ignorecost = 0)
 	
 	// Check for hard coded items with special conditions
 	if ((itemid == EXTRA_ANTIDOTE && (g_endround || fnGetZombies() <= 1 || (get_pcvar_num(cvar_deathmatch) && !get_pcvar_num(cvar_respawnafterlast) && fnGetHumans() == 1)))
-	|| (itemid == EXTRA_MADNESS && g_nodamage[id]) || (itemid == EXTRA_INFBOMB && g_endround))
+	|| (itemid == EXTRA_INFBOMB && g_endround))
 	{
 		client_print_color(id, print_team_default, "^x04[%s]^x01 %L", ZP_PREFIX, id, "CMD_NOT_CANTUSE")
 		return;
@@ -3760,19 +3744,6 @@ buy_extra_item(id, itemid, ignorecost = 0)
 			g_antidotecounter++
 			
 			humanme(id, 0)
-		}
-		case EXTRA_MADNESS: // Zombie Madness
-		{
-			// Increase madness purchase count for this round
-			g_madnesscounter++
-			
-			g_nodamage[id] = true
-			set_task(0.1, "zombie_aura", id+TASK_AURA, _, _, "b")
-			set_task(get_pcvar_float(cvar_madnessduration), "madness_over", id+TASK_BLOOD)
-			
-			static sound[64]
-			ArrayGetString(zombie_madness, random_num(0, ArraySize(zombie_madness) - 1), sound, charsmax(sound))
-			emit_sound(id, CHAN_VOICE, sound, 1.0, ATTN_NORM, 0, PITCH_NORM)
 		}
 		case EXTRA_INFBOMB: // Infection Bomb
 		{
@@ -5631,19 +5602,6 @@ load_customization_from_files()
 						ArrayPushString(zombie_idle_last, key)
 					}
 				}
-				else if (equal(key, "ZOMBIE MADNESS"))
-				{
-					// Parse sounds
-					while (value[0] != 0 && strtok(value, key, charsmax(key), value, charsmax(value), ','))
-					{
-						// Trim spaces
-						trim(key)
-						trim(value)
-						
-						// Add to sounds array
-						ArrayPushString(zombie_madness, key)
-					}
-				}
 				else if (equal(key, "ROUND MULTI"))
 				{
 					// Parse sounds
@@ -5912,8 +5870,6 @@ load_customization_from_files()
 					g_extra_costs2[EXTRA_NVISION] = str_to_num(value)
 				else if (equal(key, "ANTIDOTE"))
 					g_extra_costs2[EXTRA_ANTIDOTE] = str_to_num(value)
-				else if (equal(key, "ZOMBIE MADNESS"))
-					g_extra_costs2[EXTRA_MADNESS] = str_to_num(value)
 				else if (equal(key, "INFECTION BOMB"))
 					g_extra_costs2[EXTRA_INFBOMB] = str_to_num(value)
 			}
@@ -6992,10 +6948,6 @@ public zombie_play_idle(taskid) {
 		emit_sound(ID_BLOOD, CHAN_VOICE, sound, 1.0, ATTN_NORM, 0, PITCH_NORM)
 	}
 }
-
-// Madness Over Task
-public madness_over(taskid)
-	g_nodamage[ID_BLOOD] = false
 
 // Place user at a random spawn
 do_random_spawn(id, regularspawns = 0) {
@@ -8211,36 +8163,6 @@ infection_effects(id)
 	}
 }
 
-// Madness aura task
-public zombie_aura(taskid)
-{
-	// Not in zombie madness
-	if (!g_nodamage[ID_AURA])
-	{
-		// Task not needed anymore
-		remove_task(taskid);
-		return;
-	}
-	
-	// Get player's origin
-	static origin[3]
-	get_user_origin(ID_AURA, origin)
-	
-	// Colored Aura
-	message_begin(MSG_PVS, SVC_TEMPENTITY, origin)
-	write_byte(TE_DLIGHT) // TE id
-	write_coord(origin[0]) // x
-	write_coord(origin[1]) // y
-	write_coord(origin[2]) // z
-	write_byte(ZP_MADNESS_RAD) // radius
-	write_byte(ZP_MADNESS_R) // r
-	write_byte(ZP_MADNESS_G) // g
-	write_byte(ZP_MADNESS_B) // b
-	write_byte(2) // life
-	write_byte(0) // decay rate
-	message_end()
-}
-
 // Make zombies leave footsteps and bloodstains on the floor
 public make_blood(taskid)
 {
@@ -8276,8 +8198,8 @@ public burning_flame(taskid)
 	get_user_origin(ID_BURN, origin)
 	flags = pev(ID_BURN, pev_flags)
 	
-	// Madness mode - in water - burning stopped
-	if (g_nodamage[ID_BURN] || (flags & FL_INWATER) || g_burning_duration[ID_BURN] < 1)
+	// In water - burning stopped
+	if ((flags & FL_INWATER) || g_burning_duration[ID_BURN] < 1)
 	{
 		// Smoke sprite
 		message_begin(MSG_PVS, SVC_TEMPENTITY, origin)
