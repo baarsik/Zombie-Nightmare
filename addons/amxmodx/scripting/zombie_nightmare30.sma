@@ -33,7 +33,8 @@ new const ZP_NVG_HUMAN_B =   0
 1.  Обновлено для работы с AMXX 1.8.3 + ReHLDS + ReGameDLL
 2.  Удален экстра-предмет 'Zombie Madness'
 3.  Все зомби люди всегда находятся в команде Counter-Terrorists
-5.  Последний зомби переводится в команду Terrorists
+4.  Последний зомби переводится в команду Terrorists
+5.  Удалена огненная граната
 ==================================================================================
  Changelog -- 2.1
 ==================================================================================
@@ -128,12 +129,10 @@ Changelog -- 1.2
 
 #include <amxmodx>
 #include <amxmisc>
-#include <cstrike>
 #include <engine>
-#include <fakemeta>
-#include <hamsandwich>
 #include <reapi>
 #include <xs>
+#include <zn_util>
 
 /*================================================================================
  [Constants, Offsets, Macros]
@@ -255,7 +254,8 @@ enum
 }
 
 // Game modes
-enum {
+enum
+{
 	MODE_NONE = 0,
 	MODE_INFECTION,
 	MODE_MULTI,
@@ -286,27 +286,6 @@ const HUD_STATS_COLOR_B = 0
 
 // Hack to be able to use Ham_Player_ResetMaxSpeed (by joaquimandrade)
 new Ham:Ham_Player_ResetMaxSpeed = Ham_Item_PreFrame
-
-// CS Player PData Offsets (win32)
-const PDATA_SAFE = 2
-const OFFSET_PAINSHOCK = 108 // ConnorMcLeod
-const OFFSET_CSTEAMS = 114
-const OFFSET_CSMONEY = 115
-const OFFSET_CSMENUCODE = 205
-const OFFSET_FLASHLIGHT_BATTERY = 244
-const OFFSET_CSDEATHS = 444
-const OFFSET_MODELINDEX = 491 // Orangutanz
-const OFFSET_NEXTATTACK = 83
-
-// CS Player CBase Offsets (win32)
-const OFFSET_ACTIVE_ITEM = 373
-
-// CS Weapon CBase Offsets (win32)
-const OFFSET_WEAPONOWNER = 41
-
-// Linux diff's
-const OFFSET_LINUX = 5 // offsets 5 higher in Linux builds
-const OFFSET_LINUX_WEAPONS = 4 // weapon offsets are only 4 steps higher on Linux
 
 // CS Teams
 enum
@@ -395,8 +374,6 @@ new const WEAPONNAMES[][] = { "", "P228 Compact", "", "Schmidt Scout", "", "XM10
 			"USP .45 ACP Tactical", "Glock 18C", "AWP Magnum Sniper", "MP5 Navy", "M249 Para Machinegun",
 			"M3 Super 90", "M4A1 Carbine", "Schmidt TMP", "G3SG1 Auto-Sniper", "", "Desert Eagle .50 AE",
 			"SG-552 Commando", "AK-47 Kalashnikov", "", "ES P90" }
-
-// Weapon entity names
 new const WEAPONENTNAMES[][] = { "", "weapon_p228", "", "weapon_scout", "weapon_hegrenade", "weapon_xm1014", "weapon_c4", "weapon_mac10",
 			"weapon_aug", "weapon_smokegrenade", "weapon_elite", "weapon_fiveseven", "weapon_ump45", "weapon_sg550",
 			"weapon_galil", "weapon_famas", "weapon_usp", "weapon_glock18", "weapon_awp", "weapon_mp5navy", "weapon_m249",
@@ -411,9 +388,6 @@ new const sound_armorhit[] = "player/bhit_helmet-1.wav"
 // Explosion radius for custom grenades
 const Float:NADE_EXPLOSION_RADIUS = 240.0
 
-// HACK: pev_ field used to store additional ammo on weapons
-const PEV_ADDITIONAL_AMMO = pev_iuser1
-
 // HACK: pev_ field used to store custom nade types and their values
 const PEV_NADE_TYPE = pev_flTimeStepSound
 const NADE_TYPE_INFECTION = 1111
@@ -421,10 +395,6 @@ const NADE_TYPE_FROST = 2222
 const NADE_TYPE_FLARE = 3333
 const PEV_FLARE_COLOR = pev_punchangle
 const PEV_FLARE_DURATION = pev_flSwimTime
-
-// Weapon bitsums
-const PRIMARY_WEAPONS_BIT_SUM = (1<<CSW_SCOUT)|(1<<CSW_XM1014)|(1<<CSW_MAC10)|(1<<CSW_AUG)|(1<<CSW_UMP45)|(1<<CSW_SG550)|(1<<CSW_GALIL)|(1<<CSW_FAMAS)|(1<<CSW_AWP)|(1<<CSW_MP5NAVY)|(1<<CSW_M249)|(1<<CSW_M3)|(1<<CSW_M4A1)|(1<<CSW_TMP)|(1<<CSW_G3SG1)|(1<<CSW_SG552)|(1<<CSW_AK47)|(1<<CSW_P90)
-const SECONDARY_WEAPONS_BIT_SUM = (1<<CSW_P228)|(1<<CSW_ELITE)|(1<<CSW_FIVESEVEN)|(1<<CSW_USP)|(1<<CSW_GLOCK18)|(1<<CSW_DEAGLE)
 
 // Allowed weapons for zombies (added grenades/bomb for sub-plugin support, since they shouldn't be getting them anyway)
 const ZOMBIE_ALLOWED_WEAPONS_BITSUM = (1<<CSW_KNIFE)|(1<<CSW_HEGRENADE)|(1<<CSW_FLASHBANG)|(1<<CSW_SMOKEGRENADE)|(1<<CSW_C4)
@@ -849,158 +819,37 @@ public plugin_precache()
 	{
 		for(new i = 0; i < sizeof g_cd; i++)
 		{
-			engfunc(EngFunc_PrecacheSound, g_cd[i])
+			precache_sound(g_cd[i]);
 		}
 	}
-	for (i = 0; i < ArraySize(sound_round_start); i++)
-	{
-		ArrayGetString(sound_round_start, i, buffer, charsmax(buffer))
-		if (ArrayGetCell(sound_round_start_ismp3, i))
-		{
-			format(buffer, charsmax(buffer), "sound/%s", buffer)
-			engfunc(EngFunc_PrecacheGeneric, buffer)
-		}
-		else engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(sound_win_zombies); i++)
-	{
-		ArrayGetString(sound_win_zombies, i, buffer, charsmax(buffer))
-		if (ArrayGetCell(sound_win_zombies_ismp3, i))
-		{
-			format(buffer, charsmax(buffer), "sound/%s", buffer)
-			engfunc(EngFunc_PrecacheGeneric, buffer)
-		}
-		else engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(sound_win_humans); i++)
-	{
-		ArrayGetString(sound_win_humans, i, buffer, charsmax(buffer))
-		if (ArrayGetCell(sound_win_humans_ismp3, i))
-		{
-			format(buffer, charsmax(buffer), "sound/%s", buffer)
-			engfunc(EngFunc_PrecacheGeneric, buffer)
-		}
-		else engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(sound_win_no_one); i++)
-	{
-		ArrayGetString(sound_win_no_one, i, buffer, charsmax(buffer))
-		if (ArrayGetCell(sound_win_no_one_ismp3, i))
-		{
-			format(buffer, charsmax(buffer), "sound/%s", buffer)
-			engfunc(EngFunc_PrecacheGeneric, buffer)
-		}
-		else engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_infect); i++)
-	{
-		ArrayGetString(zombie_infect, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_pain); i++)
-	{
-		ArrayGetString(zombie_pain, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_die); i++)
-	{
-		ArrayGetString(zombie_die, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_fall); i++)
-	{
-		ArrayGetString(zombie_fall, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_miss_slash); i++)
-	{
-		ArrayGetString(zombie_miss_slash, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_miss_wall); i++)
-	{
-		ArrayGetString(zombie_miss_wall, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_hit_normal); i++)
-	{
-		ArrayGetString(zombie_hit_normal, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_hit_stab); i++)
-	{
-		ArrayGetString(zombie_hit_stab, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_idle); i++)
-	{
-		ArrayGetString(zombie_idle, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(zombie_idle_last); i++)
-	{
-		ArrayGetString(zombie_idle_last, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(sound_multi); i++)
-	{
-		ArrayGetString(sound_multi, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_infect); i++)
-	{
-		ArrayGetString(grenade_infect, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_infect_player); i++)
-	{
-		ArrayGetString(grenade_infect_player, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_frost); i++)
-	{
-		ArrayGetString(grenade_frost, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_frost_player); i++)
-	{
-		ArrayGetString(grenade_frost_player, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_frost_break); i++)
-	{
-		ArrayGetString(grenade_frost_break, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(grenade_flare); i++)
-	{
-		ArrayGetString(grenade_flare, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(sound_antidote); i++)
-	{
-		ArrayGetString(sound_antidote, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
-	for (i = 0; i < ArraySize(sound_thunder); i++)
-	{
-		ArrayGetString(sound_thunder, i, buffer, charsmax(buffer))
-		engfunc(EngFunc_PrecacheSound, buffer)
-	}
+	UTIL_PrecacheMusic(sound_round_start, sound_round_start_ismp3);
+	UTIL_PrecacheMusic(sound_win_zombies, sound_win_zombies_ismp3);
+	UTIL_PrecacheMusic(sound_win_humans, sound_win_humans_ismp3);
+	UTIL_PrecacheMusic(sound_win_no_one, sound_win_no_one_ismp3);
+	UTIL_PrecacheSounds(zombie_infect);
+	UTIL_PrecacheSounds(zombie_pain);
+	UTIL_PrecacheSounds(zombie_die);
+	UTIL_PrecacheSounds(zombie_fall);
+	UTIL_PrecacheSounds(zombie_miss_slash);
+	UTIL_PrecacheSounds(zombie_miss_wall);
+	UTIL_PrecacheSounds(zombie_hit_normal);
+	UTIL_PrecacheSounds(zombie_hit_stab);
+	UTIL_PrecacheSounds(zombie_idle);
+	UTIL_PrecacheSounds(zombie_idle_last);
+	UTIL_PrecacheSounds(sound_multi);
+	UTIL_PrecacheSounds(grenade_infect);
+	UTIL_PrecacheSounds(grenade_infect_player);
+	UTIL_PrecacheSounds(grenade_frost);
+	UTIL_PrecacheSounds(grenade_frost_player);
+	UTIL_PrecacheSounds(grenade_frost_break);
+	UTIL_PrecacheSounds(grenade_flare);
+	UTIL_PrecacheSounds(sound_antidote);
+	UTIL_PrecacheSounds(sound_thunder);
 	
 	// Ambience Sounds
 	if (g_ambience_sounds[AMBIENCE_SOUNDS_INFECTION])
 	{
-		for (i = 0; i < ArraySize(sound_ambience1); i++)
-		{
-			ArrayGetString(sound_ambience1, i, buffer, charsmax(buffer))
-			if (ArrayGetCell(sound_ambience1_ismp3, i))
-			{
-				format(buffer, charsmax(buffer), "sound/%s", buffer)
-				engfunc(EngFunc_PrecacheGeneric, buffer)
-			}
-			else engfunc(EngFunc_PrecacheSound, buffer)
-		}
+		UTIL_PrecacheMusic(sound_ambience1, sound_ambience1_ismp3);
 	}
 	
 	// CS sounds (just in case)
@@ -8408,110 +8257,6 @@ PlaySound(const sound[])
  [Stocks]
 =================================================================================*/
 
-// Remove Player Frags
-stock RemoveFrags(attacker, victim)
-{
-	// Remove attacker frags
-	set_pev(attacker, pev_frags, float(pev(attacker, pev_frags) - 1))
-	
-	// Remove victim deaths
-	fm_cs_set_user_deaths(victim, cs_get_user_deaths(victim) - 1)
-}
-
-// Set an entity's key value (from fakemeta_util)
-stock fm_set_kvd(entity, const key[], const value[], const classname[])
-{
-	set_kvd(0, KV_ClassName, classname)
-	set_kvd(0, KV_KeyName, key)
-	set_kvd(0, KV_Value, value)
-	set_kvd(0, KV_fHandled, 0)
-	dllfunc(DLLFunc_KeyValue, entity, 0)
-}
-
-// Set entity's rendering type (from fakemeta_util)
-stock fm_set_rendering(entity, fx = kRenderFxNone, r = 255, g = 255, b = 255, render = kRenderNormal, amount = 16)
-{
-	static Float:color[3]
-	color[0] = float(r)
-	color[1] = float(g)
-	color[2] = float(b)
-	set_pev(entity, pev_renderfx, fx)
-	set_pev(entity, pev_rendercolor, color)
-	set_pev(entity, pev_rendermode, render)
-	set_pev(entity, pev_renderamt, float(amount))
-}
-
-// Get entity's speed (from fakemeta_util)
-stock fm_get_speed(entity)
-{
-	static Float:velocity[3]
-	pev(entity, pev_velocity, velocity)
-	return floatround(vector_length(velocity));
-}
-
-// Get entity's aim origins (from fakemeta_util)
-stock fm_get_aim_origin(id, Float:origin[3])
-{
-	static Float:origin1F[3], Float:origin2F[3]
-	pev(id, pev_origin, origin1F)
-	pev(id, pev_view_ofs, origin2F)
-	xs_vec_add(origin1F, origin2F, origin1F)
-	pev(id, pev_v_angle, origin2F);
-	engfunc(EngFunc_MakeVectors, origin2F)
-	global_get(glb_v_forward, origin2F)
-	xs_vec_mul_scalar(origin2F, 9999.0, origin2F)
-	xs_vec_add(origin1F, origin2F, origin2F)
-	engfunc(EngFunc_TraceLine, origin1F, origin2F, 0, id, 0)
-	get_tr2(0, TR_vecEndPos, origin)
-}
-
-// Find entity by its owner
-stock fm_find_ent_by_owner(owner, const classname[])
-{
-	static entity; entity = -1;
-	while((entity = engfunc(EngFunc_FindEntityByString, entity, "classname", classname)) && pev(entity, pev_owner) != owner) { /* keep looping */ }
-	return entity;
-}
-
-// Set player's health (from fakemeta_util)
-stock fm_set_user_health(id, health)
-{
-	(health > 0) ? set_pev(id, pev_health, float(health)) : dllfunc(DLLFunc_ClientKill, id);
-}
-
-// Give an item to a player (from fakemeta_util)
-stock fm_give_item(id, const item[])
-{
-	static ent
-	ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, item))
-	if (!pev_valid(ent)) return;
-	
-	static Float:originF[3]
-	pev(id, pev_origin, originF)
-	set_pev(ent, pev_origin, originF)
-	set_pev(ent, pev_spawnflags, pev(ent, pev_spawnflags) | SF_NORESPAWN)
-	dllfunc(DLLFunc_Spawn, ent)
-	static save
-	save = pev(ent, pev_solid)
-	dllfunc(DLLFunc_Touch, ent, id)
-	if (pev(ent, pev_solid) != save)
-		return;
-	
-	engfunc(EngFunc_RemoveEntity, ent)
-}
-
-// Strip user weapons (from fakemeta_util)
-stock fm_strip_user_weapons(id)
-{
-	static ent
-	ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "player_weaponstrip"))
-	if (!pev_valid(ent)) return;
-	
-	dllfunc(DLLFunc_Spawn, ent)
-	dllfunc(DLLFunc_Use, ent, id)
-	engfunc(EngFunc_RemoveEntity, ent)
-}
-
 // Collect random spawn points
 stock load_spawns()
 {
@@ -8578,141 +8323,16 @@ stock collect_spawns_ent2(const classname[])
 	}
 }
 
-// Drop primary/secondary weapons
-stock drop_weapons(id, dropwhat)
-{
-	static weapons[32], num, i, weaponid
-	num = 0 // reset passed weapons count (bugfix)
-	get_user_weapons(id, weapons, num)
-	for (i = 0; i < num; i++)
-	{
-		weaponid = weapons[i]
-		if ((dropwhat == 1 && ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM)) || (dropwhat == 2 && ((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM)))
-		{
-			static wname[32], weapon_ent
-			get_weaponname(weaponid, wname, charsmax(wname))
-			weapon_ent = fm_find_ent_by_owner(id, wname)
-			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, cs_get_user_bpammo(id, weaponid))
-			engclient_cmd(id, "drop", wname)
-			cs_set_user_bpammo(id, weaponid, 0)
-		}
-	}
-}
-
-// Stock by (probably) Twilight Suzuka -counts number of chars in a string
-stock str_count(const str[], searchchar)
-{
-	new count, i, len = strlen(str)
-	for (i = 0; i <= len; i++)
-	{
-		if(str[i] == searchchar)
-			count++
-	}
-	return count;
-}
-
-// Checks if a space is vacant (credits to VEN)
-stock is_hull_vacant(Float:origin[3], hull)
-{
-	engfunc(EngFunc_TraceHull, origin, origin, 0, hull, 0, 0)
-	if (!get_tr2(0, TR_StartSolid) && !get_tr2(0, TR_AllSolid) && get_tr2(0, TR_InOpen))
-		return true;
-	
-	return false;
-}
-
-// Check if a player is stuck (credits to VEN)
-stock is_player_stuck(id)
-{
-	static Float:originF[3]
-	pev(id, pev_origin, originF)
-	engfunc(EngFunc_TraceHull, originF, originF, 0, (pev(id, pev_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN, id, 0)
-	if (get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid) || !get_tr2(0, TR_InOpen))
-		return true;
-	
-	return false;
-}
-
 // Simplified get_weaponid (CS only)
 stock cs_weapon_name_to_id(const weapon[])
 {
-	static i
+	static i;
 	for (i = 0; i < sizeof WEAPONENTNAMES; i++)
 	{
 		if (equal(weapon, WEAPONENTNAMES[i]))
 			return i;
 	}
 	return 0;
-}
-
-// Get User Current Weapon Entity
-stock fm_cs_get_current_weapon_ent(id)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(id) != PDATA_SAFE)
-		return -1;
-	
-	return get_pdata_cbase(id, OFFSET_ACTIVE_ITEM, OFFSET_LINUX);
-}
-
-// Get Weapon Entity's Owner
-stock fm_cs_get_weapon_ent_owner(ent)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(ent) != PDATA_SAFE)
-		return -1;
-	
-	return get_pdata_cbase(ent, OFFSET_WEAPONOWNER, OFFSET_LINUX_WEAPONS);
-}
-
-// Set User Deaths
-stock fm_cs_set_user_deaths(id, value)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(id) != PDATA_SAFE)
-		return;
-	
-	set_pdata_int(id, OFFSET_CSDEATHS, value, OFFSET_LINUX)
-}
-
-// Get User Team
-stock fm_cs_get_user_team(id)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(id) != PDATA_SAFE)
-		return FM_CS_TEAM_UNASSIGNED;
-	
-	return get_pdata_int(id, OFFSET_CSTEAMS, OFFSET_LINUX);
-}
-
-// Set a Player's Team
-stock fm_cs_set_user_team(id, team)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(id) != PDATA_SAFE)
-		return;
-	
-	set_pdata_int(id, OFFSET_CSTEAMS, team, OFFSET_LINUX)
-}
-
-// Set User Money
-stock fm_cs_set_user_money(id, value)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(id) != PDATA_SAFE)
-		return;
-	
-	set_pdata_int(id, OFFSET_CSMONEY, value, OFFSET_LINUX)
-}
-
-// Set User Flashlight Batteries
-stock fm_cs_set_user_batteries(id, value)
-{
-	// Prevent server crash if entity's private data not initalized
-	if (pev_valid(id) != PDATA_SAFE)
-		return;
-	
-	set_pdata_int(id, OFFSET_FLASHLIGHT_BATTERY, value, OFFSET_LINUX)
 }
 
 // Update Player's Team on all clients (adding needed delays)
@@ -8834,7 +8454,9 @@ public fm_cs_set_user_model(taskid)
 
 // Get User Model -model passed byref-
 stock fm_cs_get_user_model(player, model[], len)
+{
 	get_user_info(player, "model", model, len)
+}
 
 // Update Player's Model on all clients (adding needed delays)
 public fm_user_model_update(taskid)
@@ -8849,19 +8471,4 @@ public fm_user_model_update(taskid)
 		set_task((g_models_targettime + g_modelchange_delay) - g_gametime, "fm_cs_set_user_model", taskid)
 		g_models_targettime = g_models_targettime + g_modelchange_delay
 	}
-}
-
-UTIL_TextMsg(id, szMessage[])
-{
-	message_begin(MSG_ONE, 77, _, id)
-	write_byte(4)
-	write_string(szMessage)
-	message_end()
-}
-
-UTIL_BlinkAcct(id, BlinkAmt)
-{
-	message_begin(MSG_ONE_UNRELIABLE, 104, _, id)
-	write_byte(BlinkAmt)
-	message_end()
 }
