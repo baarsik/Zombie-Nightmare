@@ -9,7 +9,7 @@
 *
 * @note Use this for hookchain RG_RoundEnd with the parameter ScenarioEventEndRound:event
 */
-#define IsRoundExpireEvent(%0) (((1<<_:(%0) + ScenarioEventEndRound:0)) & ((1<<_:ROUND_TARGET_SAVED) | (1<<_:ROUND_HOSTAGE_NOT_RESCUED) | (1<<_:ROUND_TERRORISTS_NOT_ESCAPED) | (1<<_:ROUND_VIP_NOT_ESCAPED) | (1<<_:ROUND_GAME_OVER))) != 0)
+#define IsRoundExpireEvent(%0) (((1 << _:(%0) + _:ScenarioEventEndRound:0) & ((1 << _:ROUND_TARGET_SAVED) | (1 << _:ROUND_HOSTAGE_NOT_RESCUED) | (1 << _:ROUND_TERRORISTS_NOT_ESCAPED) | (1 << _:ROUND_VIP_NOT_ESCAPED) | (1 << _:ROUND_GAME_OVER))) != 0)
 
 /**
 * suppress warning: 200 on amxmodx 1.8.2
@@ -34,6 +34,11 @@
 	#define m_Shield_hEntToIgnoreTouchesFrom m_Shield_EntToIgnoreTouchesFrom
 	#define RG_CBasePlayer_RemoveSpawnProtection RG_CBasePlayer_RemoveProtection
 	#define RG_CBasePlayer_SetSpawnProtection RG_CBasePlayer_SetProtection
+	#define RG_CBasePlayerWeapon_DefaultDeploy RG_CBaseWeapon_DefDeploy
+	#define RG_CBasePlayerWeapon_DefaultReload RG_CBaseWeapon_DefReload
+	#define RG_CBasePlayerWeapon_DefaultShotgunReload RG_CBaseWeapon_DefShotgunReload
+	#define RG_CBasePlayer_Observer_SetMode RG_CBasePlayer_Observer_SetMod
+	#define RG_CBasePlayer_Observer_FindNextPlayer RG_CBasePlayer_Observer_FindNxt
 #endif
 
 /**
@@ -133,7 +138,7 @@ enum WpnInfo
 };
 
 /**
-* Item's info types for use with rg_set_iteminfo/rg_get_iteminfo()
+* Item's info types for use with rg_set_[global_]iteminfo/rg_get_[global_]iteminfo()
 */
 enum ItemInfo
 {
@@ -392,9 +397,88 @@ enum GamedllFunc
 
 	/*
 	* Description:      -
-	* Params:           (int cGibs, int human)
+	* Params:           (pevVictim, cGibs, human)
 	*/
 	RG_SpawnRandomGibs,
+
+	/*
+	* Description:      Called when a player drops a weapon (usually manual drop or death)
+	* Return type:      CWeaponBox * (Entity index of weaponbox)
+	* Params:           (const weaponent, const owner, modelName[], Float:origin[3], Float:angles[3], Float:velocity[3], Float:lifeTime, bool:packAmmo)
+	*/
+	RG_CreateWeaponBox,
+
+	/*
+	* Description:      Called when a player is on a ladder.
+	* Params:           (const pLadder, const playerIndex)
+	*/
+	RG_PM_LadderMove,
+
+	/*
+	* Description:      Called on every frame after a player jumps on water for a short period of time
+	* Params:           (const playerIndex)
+	*/
+	RG_PM_WaterJump,
+
+	/*
+	* Description:      Called when a player jumps on water for the first time
+	* Params:           (const playerIndex)
+	*/
+	RG_PM_CheckWaterJump,
+
+	/*
+	* Description:      Called on every frame while player presses jump button
+	* Params:           (const playerIndex)
+	*/
+	RG_PM_Jump,
+
+	/*
+	* Description:      Called on every frame to check player ducking
+	* Params:           (const playerIndex)
+	*/
+	RG_PM_Duck,
+
+	/*
+	* Description:      Called whenever player tries to unduck
+	* Params:           (const playerIndex)
+	*/
+	RG_PM_UnDuck,
+
+	/*
+	* Description:      Called whenever player emits an step sound
+	* Params:           (step, Float:fvol, const playerIndex)
+	*/
+	RG_PM_PlayStepSound,
+
+	/*
+	* Description:      Called whenever player is on air (not touching floor)
+	* Params:           (Float:wishdir[3], Float:wishspeed, Float:accel, const playerIndex)
+	*/
+	RG_PM_AirAccelerate,
+
+	/*
+	* Description:      Called when game clears multidamage data (before TraceAttack)
+	* Params:           ()
+	*/
+	RG_ClearMultiDamage,
+
+	/*
+	* Description:      Called inside TraceAttack to store entity damage to multidamage data
+	* Params:           (const pevInflictor, const pEntity, Float:flDamage, bitsDamageType)
+	*/
+	RG_AddMultiDamage,
+
+	/*
+	* Description:      Called after game finished a bullet tracing for applying damage cached on multidamage data
+	* Params:           (const pevInflictor, const pevAttacker)
+	*/
+	RG_ApplyMultiDamage,
+
+	/*
+	* Description:      Called when player buys an item from buy menu (Nightvision, Kevlar, etc.)
+	* Params:           (const pPlayer, iSlot)
+	*/
+	RG_BuyItem,
 };
 
 /**
@@ -742,7 +826,7 @@ enum GamedllFunc_CBasePlayer
 
 	/*
 	* Description:      Called when a player throws the grenade.
-	* Return type:      CGrenade * (Entity index of hegrenade)
+	* Return type:      CGrenade * (Entity index of grenade)
 	* Params:           (const this, const grenade, Float:vecSrc[3], Float:vecThrow[3], Float:time, const usEvent)
 	*/
 	RG_CBasePlayer_ThrowGrenade,
@@ -774,13 +858,62 @@ enum GamedllFunc_CBasePlayer
 	* Params:           (const this)
 	*/
 	RG_CBasePlayer_UseEmpty,
-	
+
 	/*
 	* Description:      Called when a idle player is removed from server.
 	* Return type:      void
 	* Params:           (const this, const reason[])
 	*/
-	RG_CBasePlayer_DropIdlePlayer,	
+	RG_CBasePlayer_DropIdlePlayer,
+
+	/*
+	* Description:      Called when a client attempt to change the observer mode.
+	* Params:           (const this, iMode)
+	*/
+	RG_CBasePlayer_Observer_SetMode,
+
+	/*
+	* Description:      Called when a client attempt to find the next observer.
+	* Return type:      void
+	* Params:           (const this, bool bReverse, name[])
+	*/
+	RG_CBasePlayer_Observer_FindNextPlayer,
+
+	/*
+	* Description:      Called when a client emits a "pain sound" after received damage.
+	* Return type:      void
+	* Params:           (const this)
+	*/
+	RG_CBasePlayer_Pain,
+
+	/*
+	* Description:      Called when a client emits a "death sound" after death.
+	* Return type:      void
+	* Params:           (const this, lastHitGroup, bool:hasArmour)
+	*/
+	RG_CBasePlayer_DeathSound,
+
+	/*
+	* Description:      Called when a client "thinks for the join status".
+	*                   (permanently called on each call of "CBasePlayer::PreThink", and only when he is not assigned as specatator or not playing)
+	* Return type:      void
+	* Params:           (const this)
+	*/
+	RG_CBasePlayer_JoiningThink,
+
+	/*
+	* Description:      Called every client frame to check time based damage
+	* Return type:      void
+	* Params:           (const this)
+	*/
+	RG_CBasePlayer_CheckTimeBasedDamage,
+
+	/*
+	* Description:      Called when game selects a spawn point (info_player_start/deathmatch) to position the player
+	* Return type:      edict_t * (Entity index of selected spawn point)
+	* Params:           (const this)
+	*/
+	RG_CBasePlayer_EntSelectSpawnPoint,
 };
 
 /**
@@ -815,6 +948,29 @@ enum GamedllFunc_CBasePlayerWeapon
 	* Params:           (const this, iAnim, iStartAnim, Float:fDelay, Float:fStartDelay, const pszReloadSound1[], const pszReloadSound2[])
 	*/
 	RG_CBasePlayerWeapon_DefaultShotgunReload,
+
+	/*
+	* Description:      Called every client frame (PlayerPostThink) for the player's active weapon
+	* Return type:      void
+	* Params:           (const this)
+	*/
+	RG_CBasePlayerWeapon_ItemPostFrame,
+
+	/*
+	* Description:      Called whenever player fires a weapon and shakes player screen (punchangles altering)
+	* @note             Weapons that use KickBack: AK47, AUG, FAMAS, GALIL, M249, M4A1, MAC10, MP5NAVY, P90, SG552, TMP, UMP45
+	* Return type:      void
+	* Params:           (const this, Float:up_base, Float:lateral_base, Float:up_modifier, Float:lateral_modifier, Float:p_max, Float:lateral_max, direction_change)
+	*/
+	RG_CBasePlayerWeapon_KickBack,
+
+	/*
+	* Description:      Called whenever game sends an animation to his current holder (player)
+	* @note             This is often called for all animations in exception of "fire" and "idle" sequences (both called via client prediction)
+	* Return type:      void
+	* Params:           (const this, iAnim, skiplocal)
+	*/
+	RG_CBasePlayerWeapon_SendWeaponAnim,
 };
 
 /**
@@ -840,6 +996,49 @@ enum GamedllFunc_CGib
 	*/
 	RG_CGib_WaitTillLand,
 };
+
+/**
+* GamedllFunc CBaseEntity
+*/
+enum GamedllFunc_CBaseEntity
+{
+	/*
+	* Description:      -
+	* Return type:      void
+	* Params:           (pEntity, cShots, Float:vecSrc[3], Float:vecDirShooting[3], Float:vecSpread[3], Float:flDistance, iBulletType, iTracerFreq, iDamage, pevAttacker)
+
+	*/
+	RG_CBaseEntity_FireBullets = BEGIN_FUNC_REGION(cbaseentity),
+
+	/*
+	* Description:      -
+	* Return type:      void
+	* Params:           (pEntity, cShots, Float:vecSrc[3], Float:vecDirShooting[3], Float:vecSpread[3], Float:flDistance, iTracerFreq, iDamage, pevAttacker)
+	*/
+	RG_CBaseEntity_FireBuckshots,
+
+	/*
+	* Description:      -
+	* Return type:      Vector [3]
+	* Params:           (pEntity, Float:vecSrc[3], Float:vecDirShooting[3], Float:vecSpread, Float:flDistance, iPenetration, iBulletType, iDamage, Float:flRangeModifier, pevAttacker, bool:bPistol, shared_rand)
+	*/
+	RG_CBaseEntity_FireBullets3,
+};
+
+/**
+* GamedllFunc CBotManager
+*/
+enum GamedllFunc_CBotManager
+{
+	/*
+	* Description:      Called on each improved bot event
+	* Return type:      void
+	* Params:           (GameEventType:event, const pEntity, const pOther)
+
+	*/
+	RG_CBotManager_OnEvent = BEGIN_FUNC_REGION(botmanager),
+}
+
 
 /**
 * GamedllFunc CSGameRules
@@ -966,6 +1165,7 @@ enum GamedllFunc_CSGameRules
 
 	/*
 	* Description:      -
+	* Return type:      CBasePlayer * (Entity index of player)
 	* Params:           ()
 	*/
 	RG_CSGameRules_GiveC4,
@@ -1000,6 +1200,32 @@ enum GamedllFunc_CSGameRules
 	* Params:           (const listener, const sender)
 	*/
 	RG_CSGameRules_CanPlayerHearPlayer,
+
+	/*
+	* Description:      Called every server frame to process game rules
+	* Params:           ()
+	*/
+	RG_CSGameRules_Think,
+
+	/*
+	* Description:      Called each time player tries to join a team to ensure availability
+	* Return type:      bool
+	* Params:           (team_id)
+	*/
+	RG_CSGameRules_TeamFull,
+
+	/*
+	* Description:      Called each time player tries to join a team to ensure a fair distribution of players (based on mp_limitteams cvar)
+	* Return type:      bool
+	* Params:           (newTeam_id, curTeam_id)
+	*/
+	RG_CSGameRules_TeamStacked,
+
+	/*
+	* Description:      Called each time player gets a weapon linked to his inventory
+	* Params:           (const pPlayer, const pWeapon)
+	*/
+	RG_CSGameRules_PlayerGotWeapon,
 };
 
 /**
@@ -1997,9 +2223,9 @@ enum CBaseMonster_Members
 
 	/*
 	* Description:      -
-	* Member type:      usigned char [5]
-	* Get params:       get_member_game(member);
-	* Set params:       set_member_game(member, value, element);
+	* Member type:      byte [8]
+	* Get params:       get_member(index, member, TimeBasedDamage:element);
+	* Set params:       set_member(index, member, value, TimeBasedDamage:element);
 	*/
 	m_rgbTimeBasedDamage,
 
@@ -2210,7 +2436,7 @@ enum CBasePlayer_Members
 	m_bResumeZoom,
 
 	/*
-	* Description:      -
+	* Description:      Delay to call EjectBrass function on M3, Scout and AWP (rest of weapons are client-side).
 	* Member type:      float
 	* Get params:       Float:get_member(index, member);
 	* Set params:       set_member(index, member, Float:value);
@@ -4519,7 +4745,7 @@ enum CCSPlayer_Members
 	* Set params:       set_member(index, member, Float:value);
 	*/
 	m_flSpawnProtectionEndTime,
-	
+
 	/*
 	* Description:      -
 	* Member type:      class Vector
@@ -4551,6 +4777,94 @@ enum CCSPlayer_Members
 	* Set params:       set_member(index, member, bool:value);
 	*/
 	m_bCanShootOverride,
+
+	/*
+	* Description:      -
+	* Member type:      bool
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, bool:value);
+	*/
+	m_bGameForcingRespawn,
+
+	/*
+	* Description:      -
+	* Member type:      bool
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, bool:value);
+	*/
+	m_bAutoBunnyHopping,
+
+	/*
+	* Description:      -
+	* Member type:      bool
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, bool:value);
+	*/
+	m_bMegaBunnyJumping,
+
+	/*
+	* Description:      -
+	* Member type:      bool
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, bool:value);
+	*/
+	m_bPlantC4Anywhere,
+
+	/*
+	* Description:      -
+	* Member type:      bool
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, bool:value);
+	*/
+	m_bSpawnProtectionEffects,
+
+	/*
+	* Description:      Player vertical jump height
+	* Member type:      float
+	* Get params:       Float:get_member(index, member);
+	* Set params:       set_member(index, member, Float:value);
+	*/
+	m_flJumpHeight,
+
+	/*
+	* Description:      Player vertical jump height with longjump
+	* Member type:      float
+	* Get params:       Float:get_member(index, member);
+	* Set params:       set_member(index, member, Float:value);
+	*/
+	m_flLongJumpHeight,
+
+	/*
+	* Description:      Player horizontal jump height with longjump
+	* Member type:      float
+	* Get params:       Float:get_member(index, member);
+	* Set params:       set_member(index, member, Float:value);
+	*/
+	m_flLongJumpForce,
+
+	/*
+	* Description:      Player crouch maxspeed multiplier
+	* Member type:      float
+	* Get params:       Float:get_member(index, member);
+	* Set params:       set_member(index, member, Float:value);
+	*/
+	m_flDuckSpeedMultiplier,
+
+	/*
+	* Description:      How many unanswered kills this player has been dealt by each other player (0-31)
+	* Member type:      int [32]
+	* Get params:       get_member(index, member, element);
+	* Set params:       set_member(index, member, value, element);
+	*/
+	m_iNumKilledByUnanswered,
+
+	/*
+	* Description:      Array of state per other player whether player is dominating other players (0-31)
+	* Member type:      bool [32]
+	* Get params:       get_member(index, member, element);
+	* Set params:       set_member(index, member, value, element);
+	*/
+	m_bPlayerDominated,
 };
 
 /**
@@ -5845,7 +6159,7 @@ enum CKnife_Members
 	m_Knife_usKnife,
 
 	/*
-	* Description:      -
+	* Description:      Stab damage (default: 65.0)
 	* Member type:      float
 	* Get params:       get_member(index, member);
 	* Set params:       set_member(index, member, value);
@@ -5853,7 +6167,7 @@ enum CKnife_Members
 	m_Knife_flStabBaseDamage,
 
 	/*
-	* Description:      -
+	* Description:      Swing damage (default: 15.0)
 	* Member type:      float
 	* Get params:       get_member(index, member);
 	* Set params:       set_member(index, member, value);
@@ -5861,7 +6175,7 @@ enum CKnife_Members
 	m_Knife_flSwingBaseDamage,
 
 	/*
-	* Description:      -
+	* Description:      Fast Swing (first one) damage (default: 20.0)
 	* Member type:      float
 	* Get params:       get_member(index, member);
 	* Set params:       set_member(index, member, value);
@@ -5869,7 +6183,7 @@ enum CKnife_Members
 	m_Knife_flSwingBaseDamage_Fast,
 
 	/*
-	* Description:      -
+	* Description:      Stab distance (default: 32.0)
 	* Member type:      float
 	* Get params:       get_member(index, member);
 	* Set params:       set_member(index, member, value);
@@ -5877,12 +6191,20 @@ enum CKnife_Members
 	m_Knife_flStabDistance,
 
 	/*
-	* Description:      -
+	* Description:      Swing distance (default: 64.0)
 	* Member type:      float
 	* Get params:       get_member(index, member);
 	* Set params:       set_member(index, member, value);
 	*/
 	m_Knife_flSwingDistance,
+
+	/*
+	* Description:      Back Stab damage multiplier (default: 3.0)
+	* Member type:      float
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, value);
+	*/
+	m_Knife_flBackStabMultiplier,
 };
 
 /**
@@ -5965,12 +6287,12 @@ enum CMapInfo_Members
 enum CCSPlayerWeapon_Members
 {
 	/*
-	* Description:      Can the weapon have secondary attack
-	* Member type:      bool
+	* Description:      Weapon secondary attack state
+	* Member type:      enum SecondaryAtkState
 	* Get params:       get_member(index, member);
-	* Set params:       set_member(index, member, bool:value);
+	* Set params:       set_member(index, member, SecondaryAtkState:value);
 	*/
-	m_Weapon_bHasSecondaryAttack = BEGIN_MEMBER_REGION(csplayerweapon),
+	m_Weapon_iStateSecondaryAttack = BEGIN_MEMBER_REGION(csplayerweapon),
 
 	/*
 	* Description:      Basic damage that weapon deals before any multiplier, such as hitgroup, armor, distance and bullet penetration
@@ -5980,6 +6302,9 @@ enum CCSPlayerWeapon_Members
 	*/
 	m_Weapon_flBaseDamage,
 };
+
+// API compatibility
+#define m_Weapon_bHasSecondaryAttack m_Weapon_iStateSecondaryAttack
 
 /**
 * CGib Members
@@ -5993,7 +6318,7 @@ enum CGib_Members
 	* Set params:       set_member(index, member, value);
 	*/
 	m_Gib_bloodColor = BEGIN_MEMBER_REGION(gib),
-	
+
 	/*
 	* Description:      -
 	* Member type:      int
@@ -6001,7 +6326,7 @@ enum CGib_Members
 	* Set params:       set_member(index, member, value);
 	*/
 	m_Gib_cBloodDecals,
-	
+
 	/*
 	* Description:      -
 	* Member type:      int
@@ -6009,7 +6334,7 @@ enum CGib_Members
 	* Set params:       set_member(index, member, value);
 	*/
 	m_Gib_material,
-	
+
 	/*
 	* Description:      -
 	* Member type:      float
@@ -6017,4 +6342,26 @@ enum CGib_Members
 	* Set params:       set_member(index, member, Float:value);
 	*/
 	m_Gib_lifeTime,
+};
+
+/**
+* CCSEntity API Members
+*/
+enum CCSEntity_Members
+{
+	/*
+	* Description:      Penetration level of the damage caused by the inflictor
+	* Member type:      unsigned char
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, value);
+	*/
+	m_ucDmgPenetrationLevel = BEGIN_MEMBER_REGION(csentity),
+
+	/*
+	* Description:      Cached inflictor passed inside TakeDamage to retrieve in Killed
+	* Member type:      entvars_t *
+	* Get params:       get_member(index, member);
+	* Set params:       set_member(index, member, value);
+	*/
+	m_pevLastInflictor,
 };

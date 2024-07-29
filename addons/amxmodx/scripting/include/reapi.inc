@@ -24,7 +24,9 @@ enum hooks_tables_e
 	ht_grenade,
 	ht_weaponbox,
 	ht_weapon,
-	ht_gib
+	ht_gib,
+	ht_cbaseentity,
+	ht_botmanager
 };
 
 enum members_tables_e
@@ -77,8 +79,12 @@ enum members_tables_e
 	mt_rebuystruct,
 	mt_mapinfo,
 	mt_csplayerweapon,
-	mt_gib
+	mt_gib,
+	mt_netadr,
+	mt_csentity
 };
+
+#define ReAPIFunc 				{EngineFunc, GamedllFunc, GamedllFunc_CBaseAnimating, GamedllFunc_CBasePlayer, GamedllFunc_CSGameRules, GamedllFunc_CGrenade, GamedllFunc_CWeaponBox, ReCheckerFunc, GamedllFunc_CBasePlayerWeapon, GamedllFunc_CGib, GamedllFunc_CBaseEntity, GamedllFunc_CBotManager}
 
 // Is like FNullEnt
 #define is_nullent(%0)          (%0 == 0 || is_entity(%0) == false)
@@ -93,6 +99,13 @@ enum members_tables_e
 #include <reapi_version>
 #include <reapi_engine>  // @note: only for ReHLDS
 #include <reapi_gamedll> // @note: only for gamedll Counter-Strike (ReGameDLL_CS)
+
+// If you want to use s/get_member unsafe version,
+// then macro MEMBER_UNSAFE must be defined before including header reapi.inc
+#if !defined(MEMBER_UNSAFE)
+	#define set_member set_member_s
+	#define get_member get_member_s
+#endif
 
 // addons
 #include <reapi_vtc>
@@ -121,7 +134,9 @@ enum AType
 	ATYPE_CLASSPTR,
 	ATYPE_EDICT,
 	ATYPE_EVARS,
-	ATYPE_BOOL
+	ATYPE_BOOL,
+	ATYPE_VECTOR,
+	ATYPE_TRACE
 };
 
 enum HookChain
@@ -139,7 +154,7 @@ enum HookChain
 *
 * @return           Returns a hook handle. Use EnableHookChain/DisableHookChain to toggle the forward on or off
 */
-native HookChain:RegisterHookChain({EngineFunc, GamedllFunc, GamedllFunc_CBaseAnimating, GamedllFunc_CBasePlayer, GamedllFunc_CSGameRules, GamedllFunc_CGrenade, GamedllFunc_CWeaponBox, ReCheckerFunc, GamedllFunc_CBasePlayerWeapon, GamedllFunc_CGib}:function_id, const callback[], post = 0);
+native HookChain:RegisterHookChain(ReAPIFunc:function_id, const callback[], post = 0);
 
 /*
 * Stops a hook from triggering.
@@ -191,6 +206,23 @@ native any:GetHookChainReturn(AType:type, any:...);
 * @return           Returns true if the function is successfully executed, otherwise false
 */
 native SetHookChainArg(number, AType:type, any:...);
+
+/*
+* Return call state of original API function (that are available into enum).
+* Look at the enums for parameter lists.
+*
+* @param func       The function to get state
+*
+* @return           Returns true if the original function was called, otherwise false
+*/
+native bool:IsReapiHookOriginalWasCalled(ReAPIFunc:function_id);
+
+/*
+* Returns the current hookchain handle.
+*
+* @return           Returns the hook handle
+*/
+native HookChain:GetCurrentHookChainHandle();
 
 /*
 * Compares the entity to a specified classname.
