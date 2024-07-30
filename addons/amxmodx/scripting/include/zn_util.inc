@@ -6,30 +6,7 @@
 #include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
-
-#define OFFSET_LINUX 5
-#define OFFSET_LINUX_WEAPONS 4
-
-// CS Player PData Offsets (win32)
-#define PDATA_SAFE 2
-#define OFFSET_PAINSHOCK 108
-#define OFFSET_CSTEAMS 114
-#define OFFSET_CSMONEY 115
-#define OFFSET_CSMENUCODE 205
-#define OFFSET_FLASHLIGHT_BATTERY 244
-#define OFFSET_CSDEATHS 444
-#define OFFSET_MODELINDEX 491
-#define OFFSET_NEXTATTACK 83
-
-// CS Player CBase Offsets (win32)
-#define OFFSET_ACTIVE_ITEM 373 
-#define OFFSET_WEAPONOWNER 41
-
-#define PRIMARY_WEAPONS_BIT_SUM CSW_ALL_SHOTGUNS | CSW_ALL_SMGS | CSW_ALL_RIFLES | CSW_ALL_SNIPERRIFLES | CSW_ALL_MACHINEGUNS
-#define SECONDARY_WEAPONS_BIT_SUM CSW_ALL_PISTOLS
-
-// HACK: pev_ field used to store additional ammo on weapons
-#define PEV_ADDITIONAL_AMMO pev_iuser1
+#include <zn_const>
 
 // Set entity's rendering type (from fakemeta_util)
 stock fm_set_rendering(entity, fx = kRenderFxNone, r = 255, g = 255, b = 255, render = kRenderNormal, amount = 16)
@@ -115,25 +92,37 @@ stock fm_strip_user_weapons(id)
 	engfunc(EngFunc_RemoveEntity, ent);
 }
 
+stock WeaponSlot:getWeaponSlotByWeaponId(weaponId) {
+	if (((1<<weaponId) & (CSW_ALL_SHOTGUNS | CSW_ALL_SMGS | CSW_ALL_RIFLES | CSW_ALL_SNIPERRIFLES | CSW_ALL_MACHINEGUNS)) == (1<<weaponId))
+		return WeaponSlot:Primary;
+
+	if (((1<<weaponId) & CSW_ALL_PISTOLS) == (1<<weaponId))
+		return WeaponSlot:Secondary;
+
+	if ((1<<weaponId & CSW_ALL_GRENADES) == (1<<weaponId))
+		return WeaponSlot:Grenade;
+
+	if (weaponId == CSW_KNIFE)
+		return WeaponSlot:Melee;
+
+	return WeaponSlot:Unknown;
+}
+
 // Drop primary/secondary weapons
-stock drop_weapons(id, dropwhat)
+stock drop_weapons(id, WeaponSlot:dropWeaponSlot)
 {
-	static weaponIds[32], weaponCount, i;
-	weaponCount = 0; // reset passed weapons count (bugfix)
+	new weaponIds[32], weaponCount, i;
 	get_user_weapons(id, weaponIds, weaponCount);
 	for (i = 0; i < weaponCount; i++)
 	{
-		static weaponid, bool:isPrimaryWeapon, bool:isSecondaryWeapon;
+		new weaponid, WeaponSlot:weaponSlot;
 		weaponid = weaponIds[i];
-		isPrimaryWeapon = ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM) == (1<<weaponid);
-		isSecondaryWeapon = !isPrimaryWeapon && ((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM) == (1<<weaponid);
-		if (dropwhat == 1 && isPrimaryWeapon || dropwhat == 2 && isSecondaryWeapon)
+		weaponSlot = getWeaponSlotByWeaponId(weaponid);
+		if (dropWeaponSlot == weaponSlot)
 		{
-			static wname[32], weapon_ent;
-			get_weaponname(weaponid, wname, charsmax(wname));
-			weapon_ent = fm_find_ent_by_owner(id, wname);
+			new weapon_ent = fm_find_ent_by_owner(id, WEAPONENTNAMES[weaponid]);
 			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, rg_get_user_bpammo(id, WeaponIdType:weaponid));
-			engclient_cmd(id, "drop", wname);
+			engclient_cmd(id, "drop", WEAPONENTNAMES[weaponid]);
 			rg_set_user_bpammo(id, WeaponIdType:weaponid, 0);
 		}
 	}

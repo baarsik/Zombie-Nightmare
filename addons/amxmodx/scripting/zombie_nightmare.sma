@@ -32,7 +32,8 @@ new const ZP_NVG_HUMAN_B =   0
 ==================================================================================
 1. Upgraded ReAPI 5.15 -> 5.24, AMXX 1.9.0.5271 -> 1.9.0.5294
 2. Replaced cs_set_user_bpammo and cs_get_user_bpammo with ReAPI alternatives
-3. Fixed zn_util.drop_weapons bug that dropped more weapons than necessary
+3. Reworked zn_util.drop_weapons (temporarily supports only primary and secondary wpns)
+4. Added zn_util.getWeaponSlotByWeaponId
 ==================================================================================
  Changelog -- 3.0
 ==================================================================================
@@ -373,18 +374,6 @@ new const AMMOTYPE[][] = { "", "357sig", "", "762nato", "", "buckshot", "", "45a
 // Weapon IDs for ammo types
 new const AMMOWEAPON[] = { 0, CSW_AWP, CSW_SCOUT, CSW_M249, CSW_AUG, CSW_XM1014, CSW_MAC10, CSW_FIVESEVEN, CSW_DEAGLE,
 			CSW_P228, CSW_ELITE, CSW_FLASHBANG, CSW_HEGRENADE, CSW_SMOKEGRENADE, CSW_C4 }
-
-// Primary and Secondary Weapon Names
-new const WEAPONNAMES[][] = { "", "P228 Compact", "", "Schmidt Scout", "", "XM1014 M4", "", "Ingram MAC-10", "Steyr AUG A1",
-			"", "Dual Elite Berettas", "FiveseveN", "UMP 45", "SG-550 Auto-Sniper", "IMI Galil", "Famas",
-			"USP .45 ACP Tactical", "Glock 18C", "AWP Magnum Sniper", "MP5 Navy", "M249 Para Machinegun",
-			"M3 Super 90", "M4A1 Carbine", "Schmidt TMP", "G3SG1 Auto-Sniper", "", "Desert Eagle .50 AE",
-			"SG-552 Commando", "AK-47 Kalashnikov", "", "ES P90" }
-new const WEAPONENTNAMES[][] = { "", "weapon_p228", "", "weapon_scout", "weapon_hegrenade", "weapon_xm1014", "weapon_c4", "weapon_mac10",
-			"weapon_aug", "weapon_smokegrenade", "weapon_elite", "weapon_fiveseven", "weapon_ump45", "weapon_sg550",
-			"weapon_galil", "weapon_famas", "weapon_usp", "weapon_glock18", "weapon_awp", "weapon_mp5navy", "weapon_m249",
-			"weapon_m3", "weapon_m4a1", "weapon_tmp", "weapon_g3sg1", "weapon_flashbang", "weapon_deagle", "weapon_sg552",
-			"weapon_ak47", "weapon_knife", "weapon_p90" }
 
 // CS sounds
 new const sound_flashlight[] = "items/flashlight1.wav"
@@ -3518,9 +3507,7 @@ public menu_buy1(id, key)
 // Buy Primary Weapon
 buy_primary_weapon(id, selection)
 {
-	// Drop previous weapons
-	drop_weapons(id, 1)
-	drop_weapons(id, 2)
+	drop_weapons(id, WeaponSlot:Primary)
 	
 	// Remove grenades
 	rg_set_user_bpammo(id, WeaponIdType:WEAPON_HEGRENADE, 0)
@@ -3576,14 +3563,12 @@ public menu_buy2(id, key)
 	// Store selected weapon
 	WPN_AUTO_SEC = key
 	
-	// Drop secondary gun again, in case we picked another (bugfix)
-	drop_weapons(id, 2)
-	
 	// Get weapon's id
 	static weaponid, wname[32]
 	weaponid = ArrayGetCell(g_secondary_weaponids, key)
 	ArrayGetString(g_secondary_items, key, wname, charsmax(wname))
-	
+		
+	drop_weapons(id, WeaponSlot:Secondary)
 	// Give the new weapon and full ammo
 	fm_give_item(id, wname)
 	ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
@@ -3738,10 +3723,9 @@ buy_extra_item(id, itemid, ignorecost = 0)
 				if (MAXBPAMMO[weaponid] > 2)
 				{
 					// Make user drop the previous one
-					if ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM)
-						drop_weapons(id, 1)
-					else
-						drop_weapons(id, 2)
+					new WeaponSlot:weaponSlot = getWeaponSlotByWeaponId(weaponid);
+					if (weaponSlot != WeaponSlot:Melee)
+						drop_weapons(id, weaponSlot)
 					
 					// Give full BP ammo for the new one
 					ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
@@ -4860,8 +4844,8 @@ zombieme(id, infector, silentmode, rewards, allowend = 0, first = 0)
 	cs_set_user_armor(id, 0, CS_ARMOR_NONE)
 	
 	// Drop weapons when infected
-	drop_weapons(id, 1)
-	drop_weapons(id, 2)
+	drop_weapons(id, WeaponSlot:Primary)
+	drop_weapons(id, WeaponSlot:Secondary)
 	
 	// Strip zombies from guns and give them a knife
 	fm_strip_user_weapons(id)
@@ -5012,8 +4996,8 @@ humanme(id, silentmode)
 	}
 	
 	// Drop previous weapons
-	drop_weapons(id, 1)
-	drop_weapons(id, 2)
+	drop_weapons(id, WeaponSlot:Primary)
+	drop_weapons(id, WeaponSlot:Secondary)
 	
 	// Strip off from weapons
 	fm_strip_user_weapons(id)
