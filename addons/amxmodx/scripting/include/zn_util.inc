@@ -25,8 +25,8 @@
 #define OFFSET_ACTIVE_ITEM 373 
 #define OFFSET_WEAPONOWNER 41
 
-#define PRIMARY_WEAPONS_BIT_SUM (1<<CSW_SCOUT)|(1<<CSW_XM1014)|(1<<CSW_MAC10)|(1<<CSW_AUG)|(1<<CSW_UMP45)|(1<<CSW_SG550)|(1<<CSW_GALIL)|(1<<CSW_FAMAS)|(1<<CSW_AWP)|(1<<CSW_MP5NAVY)|(1<<CSW_M249)|(1<<CSW_M3)|(1<<CSW_M4A1)|(1<<CSW_TMP)|(1<<CSW_G3SG1)|(1<<CSW_SG552)|(1<<CSW_AK47)|(1<<CSW_P90)
-#define SECONDARY_WEAPONS_BIT_SUM (1<<CSW_P228)|(1<<CSW_ELITE)|(1<<CSW_FIVESEVEN)|(1<<CSW_USP)|(1<<CSW_GLOCK18)|(1<<CSW_DEAGLE)
+#define PRIMARY_WEAPONS_BIT_SUM CSW_ALL_SHOTGUNS | CSW_ALL_SMGS | CSW_ALL_RIFLES | CSW_ALL_SNIPERRIFLES | CSW_ALL_MACHINEGUNS
+#define SECONDARY_WEAPONS_BIT_SUM CSW_ALL_PISTOLS
 
 // HACK: pev_ field used to store additional ammo on weapons
 #define PEV_ADDITIONAL_AMMO pev_iuser1
@@ -118,13 +118,16 @@ stock fm_strip_user_weapons(id)
 // Drop primary/secondary weapons
 stock drop_weapons(id, dropwhat)
 {
-	static weapons[32], num, i, weaponid;
-	num = 0; // reset passed weapons count (bugfix)
-	get_user_weapons(id, weapons, num);
-	for (i = 0; i < num; i++)
+	static weaponIds[32], weaponCount, i;
+	weaponCount = 0; // reset passed weapons count (bugfix)
+	get_user_weapons(id, weaponIds, weaponCount);
+	for (i = 0; i < weaponCount; i++)
 	{
-		weaponid = weapons[i];
-		if ((dropwhat == 1 && ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM)) || (dropwhat == 2 && ((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM)))
+		static weaponid, bool:isPrimaryWeapon, bool:isSecondaryWeapon;
+		weaponid = weaponIds[i];
+		isPrimaryWeapon = ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM) == (1<<weaponid);
+		isSecondaryWeapon = !isPrimaryWeapon && ((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM) == (1<<weaponid);
+		if (dropwhat == 1 && isPrimaryWeapon || dropwhat == 2 && isSecondaryWeapon)
 		{
 			static wname[32], weapon_ent;
 			get_weaponname(weaponid, wname, charsmax(wname));

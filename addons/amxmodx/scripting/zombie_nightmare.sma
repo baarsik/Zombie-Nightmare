@@ -4,7 +4,7 @@
 
 // Text
 new const ZP_PREFIX[] =      "SERVER"
-new const BUY_MOTD[] =       "https://cerberus.by/motd/demo.html"
+new const BUY_MOTD[] =       "https://example.com/motd/demo.html"
 
 // Limits
 new const ZP_MAX_AMMO =      1000
@@ -32,6 +32,7 @@ new const ZP_NVG_HUMAN_B =   0
 ==================================================================================
 1. Upgraded ReAPI 5.15 -> 5.24, AMXX 1.9.0.5271 -> 1.9.0.5294
 2. Replaced cs_set_user_bpammo and cs_get_user_bpammo with ReAPI alternatives
+3. Fixed zn_util.drop_weapons bug that dropped more weapons than necessary
 ==================================================================================
  Changelog -- 3.0
 ==================================================================================
@@ -144,7 +145,7 @@ Changelog -- 1.2
 =================================================================================*/
 
 // Plugin Version
-new const PLUGIN_VERSION[] = "3.0"
+new const PLUGIN_VERSION[] = "3.1-dev"
 
 // Customization files
 new const ZP_CUSTOMIZATION_FILE[] = "zombienightmare.ini"
