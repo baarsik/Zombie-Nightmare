@@ -129,9 +129,9 @@ stock drop_weapons(id, dropwhat)
 			static wname[32], weapon_ent;
 			get_weaponname(weaponid, wname, charsmax(wname));
 			weapon_ent = fm_find_ent_by_owner(id, wname);
-			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, cs_get_user_bpammo(id, weaponid));
+			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, rg_get_user_bpammo(id, WeaponIdType:weaponid));
 			engclient_cmd(id, "drop", wname);
-			cs_set_user_bpammo(id, weaponid, 0);
+			rg_set_user_bpammo(id, WeaponIdType:weaponid, 0);
 		}
 	}
 }

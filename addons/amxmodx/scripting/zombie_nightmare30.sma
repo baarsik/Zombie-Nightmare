@@ -30,7 +30,8 @@ new const ZP_NVG_HUMAN_B =   0
 /*================================================================================
  Changelog -- 3.1 [WIP]
 ==================================================================================
-1. Upgraded ReAPI 5.15 -> 5.25, AMXX 1.9.0.5271 -> 1.9.0.5294
+1. Upgraded ReAPI 5.15 -> 5.24, AMXX 1.9.0.5271 -> 1.9.0.5294
+2. Replaced cs_set_user_bpammo and cs_get_user_bpammo with ReAPI alternatives
 ==================================================================================
  Changelog -- 3.0
 ==================================================================================
@@ -3521,9 +3522,9 @@ buy_primary_weapon(id, selection)
 	drop_weapons(id, 2)
 	
 	// Remove grenades
-	cs_set_user_bpammo(id, CSW_HEGRENADE, 0)
-	cs_set_user_bpammo(id, CSW_FLASHBANG, 0)
-	cs_set_user_bpammo(id, CSW_SMOKEGRENADE, 0)
+	rg_set_user_bpammo(id, WeaponIdType:WEAPON_HEGRENADE, 0)
+	rg_set_user_bpammo(id, WeaponIdType:WEAPON_FLASHBANG, 0)
+	rg_set_user_bpammo(id, WeaponIdType:WEAPON_SMOKEGRENADE, 0)
 	
 	// Get weapon's id and name
 	static weaponid, wname[32]
@@ -3706,7 +3707,7 @@ buy_extra_item(id, itemid, ignorecost = 0)
 			if (user_has_weapon(id, CSW_HEGRENADE))
 			{
 				// Increase BP ammo on it instead
-				cs_set_user_bpammo(id, CSW_HEGRENADE, cs_get_user_bpammo(id, CSW_HEGRENADE) + 1)
+				rg_set_user_bpammo(id, WeaponIdType:WEAPON_HEGRENADE, rg_get_user_bpammo(id, WeaponIdType:WEAPON_HEGRENADE) + 1)
 				
 				// Flash ammo in hud
 				message_begin(MSG_ONE_UNRELIABLE, g_msgAmmoPickup, _, id)
@@ -3748,7 +3749,7 @@ buy_extra_item(id, itemid, ignorecost = 0)
 				else if (user_has_weapon(id, weaponid))
 				{
 					// Increase BP ammo on it instead
-					cs_set_user_bpammo(id, weaponid, cs_get_user_bpammo(id, weaponid) + 1)
+					rg_set_user_bpammo(id, WeaponIdType:weaponid, rg_get_user_bpammo(id, WeaponIdType:weaponid) + 1)
 					
 					// Flash ammo in hud
 					message_begin(MSG_ONE_UNRELIABLE, g_msgAmmoPickup, _, id)
