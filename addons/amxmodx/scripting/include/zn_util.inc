@@ -92,40 +92,20 @@ stock fm_strip_user_weapons(id)
 	engfunc(EngFunc_RemoveEntity, ent);
 }
 
-stock WeaponSlot:getWeaponSlotByWeaponId(weaponId) {
-	if (((1<<weaponId) & (CSW_ALL_SHOTGUNS | CSW_ALL_SMGS | CSW_ALL_RIFLES | CSW_ALL_SNIPERRIFLES | CSW_ALL_MACHINEGUNS)) == (1<<weaponId))
-		return WeaponSlot:Primary;
+stock InventorySlotType:GetWeaponSlotByWeaponId(weaponId) {
+	if (weaponId == CSW_KNIFE)
+		return InventorySlotType:KNIFE_SLOT;
 
 	if (((1<<weaponId) & CSW_ALL_PISTOLS) == (1<<weaponId))
-		return WeaponSlot:Secondary;
+		return InventorySlotType:PISTOL_SLOT;
+
+	if (((1<<weaponId) & (CSW_ALL_SHOTGUNS | CSW_ALL_SMGS | CSW_ALL_RIFLES | CSW_ALL_SNIPERRIFLES | CSW_ALL_MACHINEGUNS)) == (1<<weaponId))
+		return InventorySlotType:PRIMARY_WEAPON_SLOT;
 
 	if ((1<<weaponId & CSW_ALL_GRENADES) == (1<<weaponId))
-		return WeaponSlot:Grenade;
+		return InventorySlotType:GRENADE_SLOT;
 
-	if (weaponId == CSW_KNIFE)
-		return WeaponSlot:Melee;
-
-	return WeaponSlot:Unknown;
-}
-
-// Drop primary/secondary weapons
-stock drop_weapons(id, WeaponSlot:dropWeaponSlot)
-{
-	new weaponIds[32], weaponCount, i;
-	get_user_weapons(id, weaponIds, weaponCount);
-	for (i = 0; i < weaponCount; i++)
-	{
-		new weaponid, WeaponSlot:weaponSlot;
-		weaponid = weaponIds[i];
-		weaponSlot = getWeaponSlotByWeaponId(weaponid);
-		if (dropWeaponSlot == weaponSlot)
-		{
-			new weapon_ent = fm_find_ent_by_owner(id, WEAPONENTNAMES[weaponid]);
-			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, rg_get_user_bpammo(id, WeaponIdType:weaponid));
-			engclient_cmd(id, "drop", WEAPONENTNAMES[weaponid]);
-			rg_set_user_bpammo(id, WeaponIdType:weaponid, 0);
-		}
-	}
+	return InventorySlotType:NONE_SLOT;
 }
 
 // Stock by (probably) Twilight Suzuka -counts number of chars in a string

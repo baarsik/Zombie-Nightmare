@@ -28,15 +28,6 @@
 // HACK: pev_ field used to store additional ammo on weapons
 #define PEV_ADDITIONAL_AMMO pev_iuser1
 
-enum WeaponSlot {
-	Unknown,
-	Primary,
-	Secondary,
-	Melee,
-	Grenade,
-	C4
-}
-
 // Primary and Secondary Weapon Names
 new const WEAPONNAMES[][] = { "", "P228 Compact", "", "Schmidt Scout", "", "XM1014 M4", "", "Ingram MAC-10", "Steyr AUG A1",
 			"", "Dual Elite Berettas", "FiveseveN", "UMP 45", "SG-550 Auto-Sniper", "IMI Galil", "Famas",

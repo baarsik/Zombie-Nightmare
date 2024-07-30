@@ -31,9 +31,9 @@ new const ZP_NVG_HUMAN_B =   0
  Changelog -- 3.1 [WIP]
 ==================================================================================
 1. Upgraded ReAPI 5.15 -> 5.24, AMXX 1.9.0.5271 -> 1.9.0.5294
-2. Replaced cs_set_user_bpammo and cs_get_user_bpammo with ReAPI alternatives
-3. Reworked zn_util.drop_weapons (temporarily supports only primary and secondary wpns)
-4. Added zn_util.getWeaponSlotByWeaponId
+2. Replaced following calls with ReAPI alternatives: cs_set_user_bpammo, cs_get_user_bpammo, fm_give_item, cs_set_user_armor
+3. Replaced zn_util.drop_weapons with rg_drop_items_by_slot, some drop_weapons calls were removed
+4. Added zn_util.GetWeaponSlotByWeaponId
 ==================================================================================
  Changelog -- 3.0
 ==================================================================================
@@ -1894,18 +1894,19 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage, damage_type)
 	// Does human armor need to be reduced before infecting?
 	if (get_pcvar_num(cvar_humanarmor))
 	{
-		// Get victim armor
-		static Float:armor
-		pev(victim, pev_armorvalue, armor)
+		new armor, ArmorType:armorType;
+		armor = rg_get_user_armor(victim, armorType);
 		
 		// If he has some, block the infection and reduce armor instead
-		if (armor > 0.0)
+		if (armor > 0)
 		{
-			emit_sound(victim, CHAN_BODY, sound_armorhit, 1.0, ATTN_NORM, 0, PITCH_NORM)
-			if (armor - damage > 0.0)
-				set_pev(victim, pev_armorvalue, armor - damage)
+			new remainingArmor;
+			remainingArmor = floatround(armor - damage);
+			emit_sound(victim, CHAN_BODY, sound_armorhit, 1.0, ATTN_NORM, 0, PITCH_NORM);
+			if (remainingArmor > 0.0)
+				rg_set_user_armor(victim, remainingArmor, armorType);
 			else
-				cs_set_user_armor(victim, 0, CS_ARMOR_NONE)
+				rg_set_user_armor(victim, 0, ArmorType:ARMOR_NONE);
 			return HAM_SUPERCEDE;
 		}
 	}
@@ -3507,21 +3508,17 @@ public menu_buy1(id, key)
 // Buy Primary Weapon
 buy_primary_weapon(id, selection)
 {
-	drop_weapons(id, WeaponSlot:Primary)
-	
-	// Remove grenades
-	rg_set_user_bpammo(id, WeaponIdType:WEAPON_HEGRENADE, 0)
-	rg_set_user_bpammo(id, WeaponIdType:WEAPON_FLASHBANG, 0)
-	rg_set_user_bpammo(id, WeaponIdType:WEAPON_SMOKEGRENADE, 0)
-	
 	// Get weapon's id and name
 	static weaponid, wname[32]
 	weaponid = ArrayGetCell(g_primary_weaponids, selection)
 	ArrayGetString(g_primary_items, selection, wname, charsmax(wname))
 	
 	// Give the new weapon and full ammo
-	fm_give_item(id, wname)
-	ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
+	rg_give_item(id, wname, GiveType:GT_DROP_AND_REPLACE);
+	ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid]);
+
+	// Remove nades for balancing purposes
+	rg_remove_items_by_slot(id, InventorySlotType:GRENADE_SLOT);
 	
 	// Weapons bought
 	g_canbuy[id] = false
@@ -3531,7 +3528,7 @@ buy_primary_weapon(id, selection)
 	for (i = 0; i < ArraySize(g_additional_items); i++)
 	{
 		ArrayGetString(g_additional_items, i, wname, charsmax(wname))
-		fm_give_item(id, wname)
+		rg_give_item(id, wname);
 	}
 }
 
@@ -3568,9 +3565,8 @@ public menu_buy2(id, key)
 	weaponid = ArrayGetCell(g_secondary_weaponids, key)
 	ArrayGetString(g_secondary_items, key, wname, charsmax(wname))
 		
-	drop_weapons(id, WeaponSlot:Secondary)
 	// Give the new weapon and full ammo
-	fm_give_item(id, wname)
+	rg_give_item(id, wname, GiveType:GT_DROP_AND_REPLACE);
 	ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
 	
 	return PLUGIN_HANDLED;
@@ -3708,7 +3704,7 @@ buy_extra_item(id, itemid, ignorecost = 0)
 			}
 			
 			// Give weapon to the player
-			fm_give_item(id, "weapon_hegrenade")
+			rg_give_item(id, "weapon_hegrenade");
 		}
 		default:
 		{
@@ -3723,9 +3719,9 @@ buy_extra_item(id, itemid, ignorecost = 0)
 				if (MAXBPAMMO[weaponid] > 2)
 				{
 					// Make user drop the previous one
-					new WeaponSlot:weaponSlot = getWeaponSlotByWeaponId(weaponid);
-					if (weaponSlot != WeaponSlot:Melee)
-						drop_weapons(id, weaponSlot)
+					new InventorySlotType:weaponSlot = GetWeaponSlotByWeaponId(weaponid);
+					if (weaponSlot != InventorySlotType:KNIFE_SLOT)
+						rg_drop_items_by_slot(id, weaponSlot)
 					
 					// Give full BP ammo for the new one
 					ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
@@ -3749,7 +3745,7 @@ buy_extra_item(id, itemid, ignorecost = 0)
 				}
 				
 				// Give weapon to the player
-				fm_give_item(id, wname)
+				rg_give_item(id, wname);
 			}
 			else // Custom additions
 			{
@@ -4841,15 +4837,15 @@ zombieme(id, infector, silentmode, rewards, allowend = 0, first = 0)
 	cs_set_user_zoom(id, CS_RESET_ZOOM, 1)
 	
 	// Remove armor
-	cs_set_user_armor(id, 0, CS_ARMOR_NONE)
+	rg_set_user_armor(id, 0, ArmorType:ARMOR_NONE);
 	
 	// Drop weapons when infected
-	drop_weapons(id, WeaponSlot:Primary)
-	drop_weapons(id, WeaponSlot:Secondary)
+	rg_drop_items_by_slot(id, InventorySlotType:PRIMARY_WEAPON_SLOT);
+	rg_drop_items_by_slot(id, InventorySlotType:PISTOL_SLOT);
 	
 	// Strip zombies from guns and give them a knife
-	fm_strip_user_weapons(id)
-	fm_give_item(id, "weapon_knife")
+	rg_remove_all_items(id);
+	rg_give_item(id, "weapon_knife");
 	
 	// Fancy effects
 	infection_effects(id)
@@ -4996,12 +4992,12 @@ humanme(id, silentmode)
 	}
 	
 	// Drop previous weapons
-	drop_weapons(id, WeaponSlot:Primary)
-	drop_weapons(id, WeaponSlot:Secondary)
+	rg_drop_items_by_slot(id, InventorySlotType:PRIMARY_WEAPON_SLOT);
+	rg_drop_items_by_slot(id, InventorySlotType:PISTOL_SLOT);
 	
 	// Strip off from weapons
-	fm_strip_user_weapons(id)
-	fm_give_item(id, "weapon_knife")
+	rg_remove_all_items(id);
+	rg_give_item(id, "weapon_knife");
 	
 	// Fix weaponkey
 	static ent; ent = fm_find_ent_by_owner(id, "weapon_knife")
