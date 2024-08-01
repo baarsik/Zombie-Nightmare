@@ -8,12 +8,12 @@
 #include <amxmisc>
 #include <fun>
 #include <engine>
-#include <fakemeta_util>
+#include <reapi>
 #include <hamsandwich>
 #include <cstrike>
 #include <zombienightmare>
 
-#define VERSION				"2.4.1"
+#define VERSION				"2.5-dev"
 
 #define FLAG_A (1<<0)
 #define FLAG_B (1<<1)
@@ -42,10 +42,6 @@
 new const MAXBPAMMO[] = { -1, 52, -1, 90, 1, 32, 1, 100, 90, 1, 120, 100, 100, 90, 90, 90, 100, 120, 30, 120, 200, 32, 90, 120, 90, 2, 35, 90, 90, -1, 100 }
 new const AMMOTYPE[][] = { "", "357sig", "", "762nato", "", "buckshot", "", "45acp", "556nato", "", "9mm", "57mm", "45acp", "556nato", "556nato", "556nato",
 	"45acp", "9mm", "338magnum", "9mm", "556natobox", "buckshot", "556nato", "9mm", "762nato", "", "50ae", "556nato", "762nato", "", "57mm" }
-const PRIMARY_WEAPONS_BIT_SUM = (1<<CSW_SCOUT)|(1<<CSW_XM1014)|(1<<CSW_MAC10)|(1<<CSW_AUG)|(1<<CSW_UMP45)|(1<<CSW_SG550)|(1<<CSW_GALIL)|(1<<CSW_FAMAS)|(1<<CSW_AWP)|
-	(1<<CSW_MP5NAVY)|(1<<CSW_M249)|(1<<CSW_M3)|(1<<CSW_M4A1)|(1<<CSW_TMP)|(1<<CSW_G3SG1)|(1<<CSW_SG552)|(1<<CSW_AK47)|(1<<CSW_P90)
-const SECONDARY_WEAPONS_BIT_SUM = (1<<CSW_P228)|(1<<CSW_ELITE)|(1<<CSW_FIVESEVEN)|(1<<CSW_USP)|(1<<CSW_GLOCK18)|(1<<CSW_DEAGLE)
-const PEV_ADDITIONAL_AMMO = pev_iuser1
 
 new const INI_FILE[] = "zn_buymenu.ini"
 
@@ -606,27 +602,8 @@ stock UTIL_GiveWeapon(const id, const weapon[])
 	new weaponid = get_weaponid(weapon)
 	if(!weaponid) return;
 	
-	if(((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM)) UTIL_DropWeapons(id, 1)
-	else if(((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM)) UTIL_DropWeapons(id, 2)
-	fm_give_item(id, weapon)
+	rg_give_item(id, weapon, GiveType:GT_DROP_AND_REPLACE);
 	ExecuteHamB(Ham_GiveAmmo, id, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
-}
-
-stock UTIL_DropWeapons(const id, const dropwhat)
-{
-	static weapons[32], num = 0, i, weaponid
-	get_user_weapons(id, weapons, num)
-	for (i = 0; i < num; i++) {
-		weaponid = weapons[i]
-		if ((dropwhat == 1 && ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM)) || (dropwhat == 2 && ((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM))) {
-			static wname[32], weapon_ent
-			get_weaponname(weaponid, wname, charsmax(wname))
-			weapon_ent = fm_find_ent_by_owner(-1, wname, id)
-			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, cs_get_user_bpammo(id, weaponid))
-			engclient_cmd(id, "drop", wname)
-			cs_set_user_bpammo(id, weaponid, 0)
-		}
-	}
 }
 
 zp_colored_print(target, const message[], any:...)
