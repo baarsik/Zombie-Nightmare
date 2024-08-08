@@ -34,6 +34,8 @@ new const ZP_NVG_HUMAN_B =   0
 2. Replaced following calls with ReAPI alternatives: cs_set_user_bpammo, cs_get_user_bpammo, fm_give_item, cs_set_user_armor
 3. Replaced zn_util.drop_weapons with rg_drop_items_by_slot, some drop_weapons calls were removed
 4. Added zn_util.GetWeaponSlotByWeaponId
+5. Extracted nightvision logic to a separate plugin
+6. Fixed a bug where turning off nightvision before round starts resulted in a temporary darker lighting for the player
 ==================================================================================
  Changelog -- 3.0
 ==================================================================================
@@ -139,6 +141,8 @@ Changelog -- 1.2
 #include <engine>
 #include <reapi>
 #include <xs>
+
+#include <nightvision>
 #include <zn_util>
 
 /*================================================================================
@@ -434,8 +438,6 @@ new g_instantinfect[33] // has ability to infect in 1 hit
 new Float:g_frozen_gravity[33] // store previous gravity when frozen
 new g_nodamage[33] // has spawn protection
 new g_respawn_as_zombie[33] // should respawn as zombie
-new g_nvision[33] // has night vision
-new g_nvisionenabled[33] // has night vision turned on
 new g_zombieclass[33] // zombie class
 new g_zombieclassnext[33] // zombie class for next infection
 new g_flashlight[33] // has custom flashlight turned on
@@ -493,6 +495,7 @@ new g_switchingteam // flag for whenever a player's team change emessage is sent
 new g_buyzone_ent // custom buyzone entity
 new Float:g_gametime // current get_gametime()
 new g_currentmode // current gamemode
+new g_currentLighting[2] = "k";
 
 // Message IDs vars
 new g_msgScoreInfo, g_msgNVGToggle, g_msgScoreAttrib, g_msgAmmoPickup, g_msgScreenFade,
@@ -630,8 +633,6 @@ public plugin_natives()
 	register_native("zp_get_zombie_maxhealth", "native_get_zombie_maxhealth", 1)
 	register_native("zp_get_user_batteries", "native_get_user_batteries", 1)
 	register_native("zp_set_user_batteries", "native_set_user_batteries", 1)
-	register_native("zp_get_user_nightvision", "native_get_user_nightvision", 1)
-	register_native("zp_set_user_nightvision", "native_set_user_nightvision", 1)
 	register_native("zp_infect_user", "native_infect_user", 1)
 	register_native("zp_disinfect_user", "native_disinfect_user", 1)
 	register_native("zp_respawn_user", "native_respawn_user", 1)
@@ -951,7 +952,6 @@ public plugin_init()
 	register_clcmd("jointeam", "clcmd_changeteam")
 	register_clcmd("zp_give_ammo","cmd_give_ammo")
 	register_clcmd("zp_give_souls","cmd_give_souls")
-	register_clcmd("nightvision", "cmd_nightvision")
 	register_clcmd("about", "clcmd_about")
 	
 	// Menus
@@ -1546,13 +1546,15 @@ public fw_PlayerSpawn_Post(id)
 	// Spawn as zombie?
 	if (g_respawn_as_zombie[id] && !g_newround)
 	{
-		reset_vars(id, 0)
-		zombieme(id, 0, 0, 0) // make him zombie right away
+		reset_vars(id, 0);
+		SetUserNightvision(id, false);
+		zombieme(id, 0, 0, 0); // make him zombie right away
 		return;
 	}
 	
 	// Reset player vars
 	reset_vars(id, 0)
+	SetUserNightvision(id, false);
 	g_buytime[id] = g_gametime
 	
 	// Show custom buy menu?
@@ -1695,7 +1697,7 @@ public fw_PlayerSpawn_Post(id)
 	if(ent > 0 && !g_zombie[id]) set_pev(ent, pev_impulse, g_knife_weaponkey[id])
 	
 	// Nvg fix
-	SetLight(id,"c")
+	SetLight(id, g_currentLighting);
 	
 	// Submodel fix
 	set_pev(id, pev_body, g_playermodelbody[id])
@@ -1713,17 +1715,6 @@ public fw_PlayerKilled(victim, attacker, shouldgib)
 	
 	// Enable dead players nightvision
 	set_task(0.1, "spec_nvision", victim)
-	
-	// Disable nightvision when killed (bugfix)
-	if (get_pcvar_num(cvar_nvggive) == 0 && g_nvision[victim])
-	{
-		g_nvision[victim] = false
-		g_nvisionenabled[victim] = false
-	}
-	
-	// Turn off nightvision when killed (bugfix)
-	if (get_pcvar_num(cvar_nvggive) == 2 && g_nvision[victim] && g_nvisionenabled[victim])
-		g_nvisionenabled[victim] = false
 	
 	// Turn off custom flashlight when killed
 	if (g_cached_customflash)
@@ -1787,17 +1778,6 @@ public fw_PlayerKilled_Post(victim, attacker, shouldgib)
 		write_long(_:0.001)
 		message_end()
 	}
-	
-	// Remove nightvision screenfade
-	message_begin(MSG_ONE, g_msgScreenFade, _, victim)
-	write_short(0)
-	write_short(0)
-	write_short(0x0000)
-	write_byte(100)
-	write_byte(100)
-	write_byte(100)
-	write_byte(255)
-	message_end()
 	
 	// Determine whether the player killed himself
 	static selfkill
@@ -2735,50 +2715,32 @@ public clcmd_sayunstuck(id)
 	return PLUGIN_HANDLED
 }
 
-// Nightvision toggle
-public cmd_nightvision(id)
+public NightvisionTurnedOn_Pre(id, &red, &green, &blue, lightLevel[], lightLevelLen)
 {
-	if(!g_isconnected[id] || g_frozen[id]) return PLUGIN_HANDLED;
-	if(!g_nvision[id] && !cs_get_user_nvg(id)) return PLUGIN_HANDLED;
-	g_nvisionenabled[id] = !(g_nvisionenabled[id])
-	if(g_nvisionenabled[id]) Nvg(id)
+	if (g_frozen[id])
+		return PLUGIN_HANDLED;
+
+	if(g_zombie[id])
+	{
+		red = ZP_NVG_ZOMBIE_R;
+		green = ZP_NVG_ZOMBIE_G;
+		blue = ZP_NVG_ZOMBIE_B;
+	}
 	else
 	{
-		// Make a fog
-		if(g_ambience_fog)
-		{
-			message_begin(MSG_ONE, g_msgFog, _, id)
-			write_byte(g_fog_color[0])
-			write_byte(g_fog_color[1])
-			write_byte(g_fog_color[2])
-			write_long(_:str_to_float(g_fog_density))
-			message_end()
-		}
-		// Remove nvg
-		SetLight(id,"c")
-		message_begin(MSG_ONE, g_msgScreenFade, _, id)
-		write_short(0)
-		write_short(0)
-		write_short(0x0000)
-		write_byte(100)
-		write_byte(100)
-		write_byte(100)
-		write_byte(255)
-		message_end()
+		red = ZP_NVG_HUMAN_R;
+		green = ZP_NVG_HUMAN_G;
+		blue = ZP_NVG_HUMAN_B;
 	}
-	client_cmd(id,g_nvisionenabled[id]?"spk items/nvg_off.wav":"spk items/nvg_off.wav")
-	return PLUGIN_HANDLED;
+
+	formatex(lightLevel, lightLevelLen, "k");
+
+	return PLUGIN_CONTINUE;
 }
-public Nvg(id)
+
+public NightvisionTurnedOn_Post(id)
 {
-	if(!g_isconnected[id] || g_frozen[id])
-		return
-	
-	SetLight(id,"k")
-	if(!g_isalive[id])
-		return
-	
-	// Remove a fog
+	// Remove fog
 	if(g_ambience_fog)
 	{
 		message_begin(MSG_ONE, g_msgFog, _, id)
@@ -2788,31 +2750,55 @@ public Nvg(id)
 		write_long(_:0.001)
 		message_end()
 	}
-	
-	message_begin(MSG_ONE, g_msgScreenFade, _, id)
-	write_short((1<<12)*2)
-	write_short((1<<10)*10)
-	write_short(0x0004)
-	if(g_zombie[id])
+
+	// Spectators should not have nightvision fade
+	if (!g_isalive[id])
 	{
-		write_byte(ZP_NVG_ZOMBIE_R)
-		write_byte(ZP_NVG_ZOMBIE_G)
-		write_byte(ZP_NVG_ZOMBIE_B)
-		write_byte(100)
+		message_begin(MSG_ONE, g_msgScreenFade, _, id);
+		write_short(0);
+		write_short(0);
+		write_short(0x0000);
+		write_byte(100);
+		write_byte(100);
+		write_byte(100);
+		write_byte(255);
+		message_end();
 	}
-	else
+}
+
+public NightvisionTurnedOff_Pre(id, lightLevel[], lightLevelLen)
+{
+	if (g_frozen[id])
+		return PLUGIN_HANDLED;
+
+	formatex(lightLevel, lightLevelLen, g_currentLighting);
+
+	return PLUGIN_CONTINUE;
+}
+
+public NightvisionTurnedOff_Post(id)
+{
+	// Restore fog
+	if(g_ambience_fog)
 	{
-		write_byte(ZP_NVG_HUMAN_R)
-		write_byte(ZP_NVG_HUMAN_G)
-		write_byte(ZP_NVG_HUMAN_B)
-		write_byte(100)
+		message_begin(MSG_ONE, g_msgFog, _, id)
+		write_byte(g_fog_color[0])
+		write_byte(g_fog_color[1])
+		write_byte(g_fog_color[2])
+		write_long(_:str_to_float(g_fog_density))
+		message_end()
 	}
-	message_end()
 }
 
 stock SetLight(id, light[2])
 {
 	if(!g_isconnected[id] && id != 0) return
+
+	if (id == 0)
+	{
+		g_currentLighting = light;
+	}
+
 	if(g_currentmode >= MODE_CUSTOM)
 	{
 		ArrayGetString(g_gamemode_lighting, g_currentmode-MODE_CUSTOM, light, charsmax(light))
@@ -2821,7 +2807,7 @@ stock SetLight(id, light[2])
 	{
 		message_begin(MSG_ONE, SVC_LIGHTSTYLE, _, id)
 		write_byte(0)
-		if(g_nvision[id] && g_nvisionenabled[id]) write_string("k")
+		if(IsNightvisionEnabled(id)) write_string("k")
 		else write_string(light)
 		message_end()
 	}
@@ -2833,7 +2819,7 @@ stock SetLight(id, light[2])
 			{
 				message_begin(MSG_ONE, SVC_LIGHTSTYLE, _, i)
 				write_byte(0)
-				if(g_nvision[i] && g_nvisionenabled[i]) write_string("k")
+				if(IsNightvisionEnabled(i)) write_string("k")
 				else write_string(light)
 				message_end()
 			}
@@ -3663,15 +3649,7 @@ buy_extra_item(id, itemid, ignorecost = 0)
 	{
 		case EXTRA_NVISION: // Night Vision
 		{
-			g_nvision[id] = true
-			
-			if (!g_isbot[id])
-			{
-				g_nvisionenabled[id] = true
-				Nvg(id)
-			}
-			else
-				cs_set_user_nvg(id, 1)
+			SetUserNightvision(id, true, true, true);
 		}
 		case EXTRA_ANTIDOTE: // Antidote
 		{
@@ -4266,7 +4244,7 @@ public message_cur_weapon(msg_id, msg_dest, msg_entity)
 
 // Fix for the HL engine bug when HP is multiples of 256
 public message_health(msg_id, msg_dest, msg_entity)
-{	
+{
 	// Get player's health
 	static health;
 	health = get_user_health(msg_entity);
@@ -4853,43 +4831,19 @@ zombieme(id, infector, silentmode, rewards, allowend = 0, first = 0)
 	// Remove CS nightvision if player owns one (bugfix)
 	if (cs_get_user_nvg(id))
 	{
-		cs_set_user_nvg(id, 0)
-		// Fix NVG
-		message_begin(MSG_ONE, g_msgScreenFade, _, id)
-		write_short(0)
-		write_short(0)
-		write_short(0x0000)
-		write_byte(100)
-		write_byte(100)
-		write_byte(100)
-		write_byte(255)
-		message_end()
+		cs_set_user_nvg(id, 0);
+		SetUserNightvision(id, false);
 	}
 	
 	// Give Zombies Night Vision?
-	if (get_pcvar_num(cvar_nvggive))
+	if (get_pcvar_num(cvar_nvggive) == 1)
 	{
-		g_nvision[id] = true
-		
-		if (!g_isbot[id])
-		{
-			// Turn on Night Vision automatically?
-			if (get_pcvar_num(cvar_nvggive) == 1)
-			{
-				g_nvisionenabled[id] = true
-				set_task(0.1, "Nvg", id)
-			}
-			// Turn off nightvision when infected (bugfix)
-			else if (g_nvisionenabled[id]) g_nvisionenabled[id] = false
-		}
-		else
-			cs_set_user_nvg(id, 1); // turn on NVG for bots
+		SetUserNightvision(id, true, true, true);
 	}
 	// Disable nightvision when infected (bugfix)
-	else if (g_nvision[id])
+	else if (IsNightvisionEnabled(id))
 	{
-		g_nvision[id] = false
-		g_nvisionenabled[id] = false
+		SetUserNightvision(id, false);
 	}
 	
 	// Set custom FOV?
@@ -4978,17 +4932,8 @@ humanme(id, silentmode)
 	// Remove CS nightvision if player owns one (bugfix)
 	if (cs_get_user_nvg(id))
 	{
-		cs_set_user_nvg(id, 0)
-		// Fix NVG
-		message_begin(MSG_ONE, g_msgScreenFade, _, id)
-		write_short(0)
-		write_short(0)
-		write_short(0x0000)
-		write_byte(100)
-		write_byte(100)
-		write_byte(100)
-		write_byte(255)
-		message_end()
+		cs_set_user_nvg(id, 0);
+		SetUserNightvision(id, false);
 	}
 	
 	// Drop previous weapons
@@ -5140,21 +5085,7 @@ humanme(id, silentmode)
 	}
 	
 	// Disable nightvision when turning into human (bugfix)
-	if (g_nvision[id])
-	{
-		g_nvision[id] = false
-		g_nvisionenabled[id] = false
-		// Fix NVG
-		message_begin(MSG_ONE, g_msgScreenFade, _, id)
-		write_short(0)
-		write_short(0)
-		write_short(0x0000)
-		write_byte(100)
-		write_byte(100)
-		write_byte(100)
-		write_byte(255)
-		message_end()
-	}
+	SetUserNightvision(id, false);
 	
 	// Post user humanize forward
 	ExecuteForward(g_fwUserHumanized_post, g_fwDummyResult, id)
@@ -6138,22 +6069,10 @@ public lighting_effects()
 	{
 		for (new i = 1; i <= g_maxplayers; i++)
 		{
-			if(!g_nvisionenabled[i] && g_modestarted) SetLight(i, "c")
-			else if(!g_modestarted && !g_nvisionenabled[i])
-			{
-				switch(g_seconds)
-				{
-					case 0: SetLight(i, "c")
-					case 1: SetLight(i, "d")
-					case 2: SetLight(i, "e")
-					case 3: SetLight(i, "f")
-					case 4: SetLight(i, "g")
-					case 5: SetLight(i, "h")
-					case 6: SetLight(i, "i")
-					case 7: SetLight(i, "j")
-					default: SetLight(i, "k")
-				}
-			}
+			if (IsNightvisionEnabled(i))
+				continue;
+
+			SetLight(i, g_currentLighting);
 		}
 	}
 }
@@ -6176,7 +6095,7 @@ public thunderclap()
 	{
 		if(is_user_connected(i))
 		{
-			if(!g_nvisionenabled[i]) SetLight(i, light)
+			if(!IsNightvisionEnabled(i)) SetLight(i, light)
 		}
 	}
 	
@@ -6481,9 +6400,9 @@ public remove_freeze(id)
 	}
 	
 	// Gradually remove screen's blue tint
-	if(!g_nvisionenabled[id])
+	if(!IsNightvisionEnabled(id))
 	{
-		SetLight(id,"c")
+		SetLight(id, g_currentLighting)
 		message_begin(MSG_ONE, g_msgScreenFade, _, id)
 		write_short(UNIT_SECOND) // duration
 		write_short(0) // hold time
@@ -6494,7 +6413,10 @@ public remove_freeze(id)
 		write_byte(100) // alpha
 		message_end()
 	}
-	else Nvg(id)
+	else
+	{
+		RefreshUserNightvision(id);
+	}
 	
 	// Broken glass sound
 	static sound[64]
@@ -6634,8 +6556,6 @@ reset_vars(id, resetall)
 	g_frozen_v_angle[id] = {0, 0, 0}
 	g_nodamage[id] = false
 	g_respawn_as_zombie[id] = false
-	g_nvision[id] = false
-	g_nvisionenabled[id] = false
 	g_flashlight[id] = false
 	g_flashbattery[id] = 100
 	g_canbuy[id] = true
@@ -6666,16 +6586,9 @@ public spec_nvision(id)
 		return;
 	
 	// Give Night Vision?
-	if (get_pcvar_num(cvar_nvggive))
+	if (get_pcvar_num(cvar_nvggive) == 1)
 	{
-		g_nvision[id] = true
-		
-		// Turn on Night Vision automatically?
-		if (get_pcvar_num(cvar_nvggive) == 1)
-		{
-			g_nvisionenabled[id] = true
-			Nvg(id)
-		}
+		SetUserNightvision(id, true, true);
 	}
 }
 
@@ -6684,9 +6597,6 @@ public ShowHUD(taskid)
  {
 	static id
 	id = ID_SHOWHUD;
-	
-	if(g_nvision[ID_SHOWHUD] && g_nvisionenabled[ID_SHOWHUD] && !g_frozen[ID_SHOWHUD])
-		Nvg(ID_SHOWHUD)
 	
 	// Player died?
 	if (!g_isalive[id])
@@ -6901,7 +6811,7 @@ fnGetPlayersCount(team)
 	for (id = 1; id <= g_maxplayers; id++)
 	{
 		if (g_isconnected[id])
-		{			
+		{           
 			if (fm_cs_get_user_team(id) == team)
 				iCTs++
 		}
@@ -7426,59 +7336,6 @@ public native_set_user_batteries(id, value)
 	return true;
 }
 
-// Native: zp_get_user_nightvision
-public native_get_user_nightvision(id)
-{
-	if (!is_user_valid(id))
-	{
-		log_error(AMX_ERR_NATIVE, "[%s] Invalid Player (%d)", ZP_PREFIX, id)
-		return -1;
-	}
-	
-	return g_nvision[id];
-}
-
-// Native: zp_set_user_nightvision
-public native_set_user_nightvision(id, set)
-{
-	if (!is_user_valid_connected(id))
-	{
-		log_error(AMX_ERR_NATIVE, "[%s] Invalid Player (%d)", ZP_PREFIX, id)
-		return false;
-	}
-	
-	if (set)
-	{
-		g_nvision[id] = true
-		
-		if (!g_isbot[id])
-		{
-			g_nvisionenabled[id] = true
-			Nvg(id)
-		}
-		else
-			cs_set_user_nvg(id, 1)
-	}
-	else
-	{
-		// Remove CS nightvision if player owns one (bugfix)
-		cs_set_user_nvg(id, 0)
-		g_nvision[id] = false
-		g_nvisionenabled[id] = false
-		// Fix NVG
-		message_begin(MSG_ONE, g_msgScreenFade, _, id)
-		write_short(0)
-		write_short(0)
-		write_short(0x0000)
-		write_byte(100)
-		write_byte(100)
-		write_byte(100)
-		write_byte(255)
-		message_end()
-	}
-	return true;
-}
-
 // Native: zp_infect_user
 public native_infect_user(id, infector, silent, rewards)
 {
@@ -7927,7 +7784,7 @@ public set_user_flashlight(taskid)
 infection_effects(id)
 {
 	// Screen fade? (unless frozen)
-	if (!g_frozen[id] && get_pcvar_num(cvar_infectionscreenfade))
+	if (!g_frozen[id] && get_pcvar_num(cvar_infectionscreenfade) && !IsNightvisionEnabled(id))
 	{
 		message_begin(MSG_ONE_UNRELIABLE, g_msgScreenFade, _, id)
 		write_short(UNIT_SECOND) // duration

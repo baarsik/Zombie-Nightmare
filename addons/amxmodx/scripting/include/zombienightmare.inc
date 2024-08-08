@@ -170,22 +170,6 @@ native zp_get_user_batteries(id)
 native zp_set_user_batteries(id, charge)
 
 /**
- * Returns whether a player has night vision.
- *
- * @param id		Player index.
- * @return		True if it has, false otherwise.
- */
-native zp_get_user_nightvision(id)
-
-/**
- * Sets whether a player has night vision.
- *
- * @param id		Player index.
- * @param set		True to give, false for removing it.
- */
-native zp_set_user_nightvision(id, set)
-
-/**
  * Forces a player to become a zombie.
  *
  * Note: Unavailable for last human/survivor.
