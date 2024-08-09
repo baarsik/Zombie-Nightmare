@@ -142,6 +142,7 @@ Changelog -- 1.2
 #include <reapi>
 #include <xs>
 
+#include <msgstocks>
 #include <nightvision>
 #include <zn_util>
 
@@ -2367,17 +2368,7 @@ public fw_SetModel(entity, const model[])
 			fm_set_rendering(entity, kRenderFxGlowShell, 0, 200, 0, kRenderNormal, 16);
 			
 			// And a colored trail
-			message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
-			write_byte(TE_BEAMFOLLOW) // TE id
-			write_short(entity) // entity
-			write_short(g_trailSpr) // sprite
-			write_byte(10) // life
-			write_byte(5) // width
-			write_byte(80) // r
-			write_byte(200) // g
-			write_byte(80) // b
-			write_byte(150) // brightness
-			message_end()
+			te_create_following_beam(entity, g_trailSpr, /*life*/ 10, /*width*/ 5, /*red*/ 80, /*green*/ 200, /*blue*/ 80, /*alpha*/ 150, 0, false);
 			
 			// Set grenade type on the thrown grenade entity
 			set_pev(entity, PEV_NADE_TYPE, NADE_TYPE_INFECTION)
@@ -2393,17 +2384,7 @@ public fw_SetModel(entity, const model[])
 		fm_set_rendering(entity, kRenderFxGlowShell, 0, 100, 200, kRenderNormal, 16);
 		
 		// And a colored trail
-		message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
-		write_byte(TE_BEAMFOLLOW) // TE id
-		write_short(entity) // entity
-		write_short(g_trailSpr) // sprite
-		write_byte(10) // life
-		write_byte(5) // width
-		write_byte(0) // r
-		write_byte(100) // g
-		write_byte(200) // b
-		write_byte(200) // brightness
-		message_end()
+		te_create_following_beam(entity, g_trailSpr, /*life*/ 10, /*width*/ 5, /*red*/ 0, /*green*/ 100, /*blue*/ 200, /*alpha*/ 200, 0, false);
 		
 		// Set grenade type on the thrown grenade entity
 		set_pev(entity, PEV_NADE_TYPE, NADE_TYPE_FROST)
@@ -2479,17 +2460,7 @@ public fw_SetModel(entity, const model[])
 		//fm_set_rendering(entity, kRenderFxGlowShell, rgb[0], rgb[1], rgb[2], kRenderNormal, 16);
 		
 		// And a colored trail
-		message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
-		write_byte(TE_BEAMFOLLOW) // TE id
-		write_short(entity) // entity
-		write_short(g_trailSpr) // sprite
-		write_byte(10) // life
-		write_byte(5) // width
-		write_byte(rgb[0]) // r
-		write_byte(rgb[1]) // g
-		write_byte(rgb[2]) // b
-		write_byte(200) // brightness
-		message_end()
+		te_create_following_beam(entity, g_trailSpr, /*life*/ 10, /*width*/ 5, rgb[0], rgb[1], rgb[2], /*alpha*/ 200, 0, false);
 		
 		// Set grenade type on the thrown grenade entity
 		set_pev(entity, PEV_NADE_TYPE, NADE_TYPE_FLARE)
@@ -4825,9 +4796,6 @@ zombieme(id, infector, silentmode, rewards, allowend = 0, first = 0)
 	rg_remove_all_items(id);
 	rg_give_item(id, "weapon_knife");
 	
-	// Fancy effects
-	infection_effects(id)
-	
 	// Remove CS nightvision if player owns one (bugfix)
 	if (cs_get_user_nvg(id))
 	{
@@ -4845,6 +4813,9 @@ zombieme(id, infector, silentmode, rewards, allowend = 0, first = 0)
 	{
 		SetUserNightvision(id, false);
 	}
+	
+	// Fancy effects
+	infection_effects(id)
 	
 	// Set custom FOV?
 	if (get_pcvar_num(cvar_zombiefov) != 90 && get_pcvar_num(cvar_zombiefov) != 0)

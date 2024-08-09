@@ -151,10 +151,14 @@ public client_authorized(id)
 {
 	client_cmd(id, "setinfo ^"_vgui_menus^" ^"0^"")
 	new SteamID[35]
-	get_user_authid(id,SteamID,34)
-	if(!equal(UserSteamID[id], SteamID)) for(new index = 0; index < BCATEGORY; index++) for(new i = 0; i < MAX_CATEGORY_ITEMS; i++) {
-		ItemUsed[id][index][i] = 0
-		HasKnife[id][i] = false
+	get_user_authid(id, SteamID, 34)
+	if(!equal(UserSteamID[id], SteamID)) for(new categoryId = 0; categoryId < BCATEGORY; categoryId++)
+	{
+		for(new itemId = 0; itemId < MAX_CATEGORY_ITEMS; itemId++)
+		{
+			ItemUsed[id][categoryId][itemId] = 0
+			HasKnife[id][itemId] = false
+		}
 	}
 	UserSteamID[id] = SteamID
 	UserCategory[id] = CATEGORY_OFF
@@ -236,6 +240,14 @@ public main_handler(id, menu, item)
 		menu_destroy(menu)
 		return PLUGIN_HANDLED
 	}
+
+	if (zp_get_user_zombie(id))
+	{
+		items_menu(id, ZITEM);
+		menu_destroy(menu);
+		return PLUGIN_HANDLED;
+	}
+
 	switch(item)
 	{
 		case 0:	items_menu(id, PISTOL)
@@ -243,7 +255,7 @@ public main_handler(id, menu, item)
 		case 2:	items_menu(id, AUTOMATE)
 		case 3:	items_menu(id, RIFLE)
 		case 4:	items_menu(id, MACHINEGUN)
-		case 5:	if(zp_get_user_zombie(id)) items_menu(id, ZITEM); else items_menu(id, ITEM)
+		case 5:	items_menu(id, ITEM)
 		case 6: items_menu(id, KNIFE)
 		case 7: items_menu(id, VIP)
 	}
@@ -260,74 +272,33 @@ public items_menu(id, scategory)
 	new ammopacks = zp_get_user_ammo_packs(id)
 	new souls = zp_get_user_souls(id)
 	
-	switch(scategory)
-	{
-		case PISTOL:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_PISTOLS_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][PISTOL] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(PISTOL, id)
-		}
-		case SHOTGUN:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_SHOTGUNS_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][SHOTGUN] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(SHOTGUN, id)
-		}
-		case AUTOMATE:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_AUTOMATES_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][AUTOMATE] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(AUTOMATE, id)
-		}
-		case RIFLE:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_RIFLES_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][RIFLE] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(RIFLE, id)
-		}
-		case MACHINEGUN:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_MACHINEGUNS_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][MACHINEGUN] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(MACHINEGUN, id)
-		}
-		case ITEM:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_EXTRAITEMS_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][ITEM] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(ITEM, id)
-		}
-		case ZITEM:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_ZEXTRAITEMS_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][ZITEM] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(ZITEM, id)
-		}
-		case KNIFE:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_KNIFE_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][KNIFE] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(KNIFE, id)
-		}
-		case VIP:
-		{
-			formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, "BM_VIPITEMS_MENU", ammopacks, id, "BM_CURRENCY", souls,
-				id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
-			ItemMenu[id][VIP] = menu_create(szTemp, "items_handler")
-			UTIL_FormatMenu(VIP, id)
-		}
-	}
+	new categoryName[32]
+	GetLangKeyByCategory(scategory, categoryName, charsmax(categoryName));
+
+	formatex(szTemp, charsmax(szTemp), "%L^n\d%d %L \y| \d%d %L", id, categoryName, ammopacks, id, "BM_CURRENCY", souls,
+		id, souls % 10 == 0 ? "BM_SOULS0" : souls == 1 ? "BM_SOULS1" : souls > 4 ? "BM_SOULS0" : "BM_SOULS2")
+	ItemMenu[id][scategory] = menu_create(szTemp, "items_handler")
+	UTIL_FormatMenu(scategory, id)
+
 	UserCategory[id] = scategory
 	return PLUGIN_HANDLED;
+}
+
+GetLangKeyByCategory(category, categoryName[], categoryNameLen)
+{
+	switch(category)
+	{
+		case PISTOL: formatex(categoryName, categoryNameLen, "BM_PISTOLS_MENU");
+		case SHOTGUN: formatex(categoryName, categoryNameLen, "BM_SHOTGUNS_MENU");
+		case AUTOMATE: formatex(categoryName, categoryNameLen, "BM_AUTOMATES_MENU");
+		case RIFLE: formatex(categoryName, categoryNameLen, "BM_RIFLES_MENU");
+		case MACHINEGUN: formatex(categoryName, categoryNameLen, "BM_MACHINEGUNS_MENU");
+		case ITEM: formatex(categoryName, categoryNameLen, "BM_EXTRAITEMS_MENU");
+		case ZITEM: formatex(categoryName, categoryNameLen, "BM_ZEXTRAITEMS_MENU");
+		case KNIFE: formatex(categoryName, categoryNameLen, "BM_KNIFE_MENU");
+		case VIP: formatex(categoryName, categoryNameLen, "BM_VIPITEMS_MENU");
+		default: formatex(categoryName, categoryNameLen, "BM_CATEGORY_UNKNOWN_MENU");
+	}
 }
 
 public items_handler(id, menu, item)
@@ -426,23 +397,23 @@ public RoundStart()
 
 public file_init_pre()
 {
-		for(new id = 1; id <= g_maxplayers; id++)
+	for(new id = 1; id <= g_maxplayers; id++)
+	{
+		for(new category = 0; category < BCATEGORY; category++)
 		{
-			for(new category = 0; category < BCATEGORY; category++)
+			menu_destroy(ItemMenu[id][category]);
+			ItemCounter[category] = 0;
+			for(new i = 0; i < MAX_CATEGORY_ITEMS; i++)
 			{
-				menu_destroy(ItemMenu[id][category]);
-				ItemCounter[category] = 0;
-				for(new i = 0; i < MAX_CATEGORY_ITEMS; i++)
-				{
-					ItemUsed[id][category][i] = 0;
-					ItemPlayerUsed[category][i] = 0;
-				}
+				ItemUsed[id][category][i] = 0;
+				ItemPlayerUsed[category][i] = 0;
 			}
 		}
-		new prefix[32];
-		zp_get_server_prefix(prefix, charsmax(prefix));
-		file_init();
-		log_amx("[%s] Buymenu has been reloaded", prefix);
+	}
+	new prefix[32];
+	zp_get_server_prefix(prefix, charsmax(prefix));
+	file_init();
+	log_amx("[%s] Buymenu has been reloaded", prefix);
 }
 
 public file_init()

@@ -9,8 +9,7 @@ enum UserInfo_t
 	IsAlive,
 	IsBot,
 	HasNightvision,
-	IsNightvisionEnabled,
-	__USER_INFO_LENGTH
+	IsNightvisionEnabled
 }
 
 enum NvgColor_t
@@ -20,8 +19,8 @@ enum NvgColor_t
 	Blue
 }
 
-new g_userInfo[33][UserInfo_t:__USER_INFO_LENGTH];
-new cvar_nvgColor[NvgColor_t:3], cvar_nvgLightLevel;
+new g_userInfo[33][UserInfo_t];
+new cvar_nvgColor[NvgColor_t], cvar_nvgLightLevel;
 new fwNightvisionTurnedOn_Pre, fwNightvisionTurnedOn_Post, fwNightvisionTurnedOff_Pre, fwNightvisionTurnedOff_Post;
 
 public plugin_init()
