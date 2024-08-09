@@ -1,3 +1,4 @@
 # Compiled files
-compile/
+addons/amxmodx/scripting/compiled/
+addons/amxmodx/scripting/compile.dat
 .amxx

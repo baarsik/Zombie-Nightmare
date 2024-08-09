@@ -6,30 +6,7 @@
 #include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
-
-#define OFFSET_LINUX 5
-#define OFFSET_LINUX_WEAPONS 4
-
-// CS Player PData Offsets (win32)
-#define PDATA_SAFE 2
-#define OFFSET_PAINSHOCK 108
-#define OFFSET_CSTEAMS 114
-#define OFFSET_CSMONEY 115
-#define OFFSET_CSMENUCODE 205
-#define OFFSET_FLASHLIGHT_BATTERY 244
-#define OFFSET_CSDEATHS 444
-#define OFFSET_MODELINDEX 491
-#define OFFSET_NEXTATTACK 83
-
-// CS Player CBase Offsets (win32)
-#define OFFSET_ACTIVE_ITEM 373 
-#define OFFSET_WEAPONOWNER 41
-
-#define PRIMARY_WEAPONS_BIT_SUM (1<<CSW_SCOUT)|(1<<CSW_XM1014)|(1<<CSW_MAC10)|(1<<CSW_AUG)|(1<<CSW_UMP45)|(1<<CSW_SG550)|(1<<CSW_GALIL)|(1<<CSW_FAMAS)|(1<<CSW_AWP)|(1<<CSW_MP5NAVY)|(1<<CSW_M249)|(1<<CSW_M3)|(1<<CSW_M4A1)|(1<<CSW_TMP)|(1<<CSW_G3SG1)|(1<<CSW_SG552)|(1<<CSW_AK47)|(1<<CSW_P90)
-#define SECONDARY_WEAPONS_BIT_SUM (1<<CSW_P228)|(1<<CSW_ELITE)|(1<<CSW_FIVESEVEN)|(1<<CSW_USP)|(1<<CSW_GLOCK18)|(1<<CSW_DEAGLE)
-
-// HACK: pev_ field used to store additional ammo on weapons
-#define PEV_ADDITIONAL_AMMO pev_iuser1
+#include <zn_const>
 
 // Set entity's rendering type (from fakemeta_util)
 stock fm_set_rendering(entity, fx = kRenderFxNone, r = 255, g = 255, b = 255, render = kRenderNormal, amount = 16)
@@ -115,25 +92,20 @@ stock fm_strip_user_weapons(id)
 	engfunc(EngFunc_RemoveEntity, ent);
 }
 
-// Drop primary/secondary weapons
-stock drop_weapons(id, dropwhat)
-{
-	static weapons[32], num, i, weaponid;
-	num = 0; // reset passed weapons count (bugfix)
-	get_user_weapons(id, weapons, num);
-	for (i = 0; i < num; i++)
-	{
-		weaponid = weapons[i];
-		if ((dropwhat == 1 && ((1<<weaponid) & PRIMARY_WEAPONS_BIT_SUM)) || (dropwhat == 2 && ((1<<weaponid) & SECONDARY_WEAPONS_BIT_SUM)))
-		{
-			static wname[32], weapon_ent;
-			get_weaponname(weaponid, wname, charsmax(wname));
-			weapon_ent = fm_find_ent_by_owner(id, wname);
-			set_pev(weapon_ent, PEV_ADDITIONAL_AMMO, cs_get_user_bpammo(id, weaponid));
-			engclient_cmd(id, "drop", wname);
-			cs_set_user_bpammo(id, weaponid, 0);
-		}
-	}
+stock InventorySlotType:GetWeaponSlotByWeaponId(weaponId) {
+	if (weaponId == CSW_KNIFE)
+		return InventorySlotType:KNIFE_SLOT;
+
+	if (((1<<weaponId) & CSW_ALL_PISTOLS) == (1<<weaponId))
+		return InventorySlotType:PISTOL_SLOT;
+
+	if (((1<<weaponId) & (CSW_ALL_SHOTGUNS | CSW_ALL_SMGS | CSW_ALL_RIFLES | CSW_ALL_SNIPERRIFLES | CSW_ALL_MACHINEGUNS)) == (1<<weaponId))
+		return InventorySlotType:PRIMARY_WEAPON_SLOT;
+
+	if ((1<<weaponId & CSW_ALL_GRENADES) == (1<<weaponId))
+		return InventorySlotType:GRENADE_SLOT;
+
+	return InventorySlotType:NONE_SLOT;
 }
 
 // Stock by (probably) Twilight Suzuka -counts number of chars in a string
